@@ -61,10 +61,10 @@ export function getGrassMaterial(scene: Scene) {
     mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
 
     const diffuseTexture = new Texture('./assets/grass.png', scene)
-    const normalTexture = new Texture('./assets/normal.jpg', scene)
+    //const normalTexture = new Texture('./assets/normal.jpg', scene)
 
     mat.diffuseTexture = diffuseTexture
-    mat.bumpTexture = normalTexture
+    //mat.bumpTexture = normalTexture
 
     return mat
 }
