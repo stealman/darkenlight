@@ -1,4 +1,4 @@
-import { Data } from './data/globalData';
+import { Data } from '../data/globalData';
 
 export function getWorldMap() {
     // loop through the layers and each tile

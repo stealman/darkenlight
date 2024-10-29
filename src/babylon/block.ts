@@ -89,7 +89,7 @@ export function getWaterMaterial(scene: Scene) {
     texture.vScale = 64
 
     mat.diffuseTexture = texture
-    mat.alpha = 0.1;
+    mat.alpha = 0.2;
 
     mat.ambientColor = new Color3(1, 1, 1.0); // Bright blue color
     return mat
