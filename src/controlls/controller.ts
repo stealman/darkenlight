@@ -1,23 +1,21 @@
-import { Scene, Vector3, PointerEventTypes } from "@babylonjs/core"
+import { Scene, PointerEventTypes } from "@babylonjs/core"
 import {MyPlayer} from "@/babylon/character/myPlayer";
+import { getScreenPosition } from '@/utils/screenUtils'
 
 export function initializeController(scene: Scene) {
     scene.onPointerObservable.add((pointerInfo) => {
         if (pointerInfo.type === PointerEventTypes.POINTERDOWN /* pointerInfo.event.button === 2 */) {
-            displayLocalCoordinates(pointerInfo, scene)
+            mouseClicked(pointerInfo)
         }
     })
 }
 
-function displayLocalCoordinates(pointerInfo: any, scene: Scene) {
-    const pickResult = scene.pick(pointerInfo.event.clientX, pointerInfo.event.clientY)
+function mouseClicked(pointerInfo) {
+    const myCharPosition = getScreenPosition(MyPlayer.charModel!)
+    const dx = pointerInfo.event.clientX - myCharPosition.x
+    const dy = pointerInfo.event.clientY - myCharPosition.y
 
-    if (pickResult?.hit) {
-        const pickedPoint: Vector3 = pickResult.pickedPoint!
-        console.log(`Local Coordinates: X=${pickedPoint.x}, Y=${pickedPoint.y}, Z=${pickedPoint.z}`)
+    const angleRadians = Math.atan2(dy, dx)
+    MyPlayer.setMoveAngle(angleRadians)
 
-        MyPlayer.move(pickedPoint.x, pickedPoint.z)
-    } else {
-        console.log("No hit detected at this position.")
-    }
 }

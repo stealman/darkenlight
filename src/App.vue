@@ -11,8 +11,8 @@
 import { ref, onMounted } from 'vue'
 import { Renderer } from './babylon/renderer'
 import {loadBMPData} from "./utils/bmpLoader";
-import { Data } from './data/globalData';
-import {Settings} from "@/settings/settings";
+import {WorldData} from "@/babylon/world/worldData";
+import { Settings } from '@/settings/settings'
 
 export default {
   name: 'App',
@@ -22,10 +22,10 @@ export default {
 
     onMounted(async () => {
       if (canvas.value) {
-        // Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 );
+          Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 );
 
-        await loadWorldData()
-        Renderer.initialize(canvas.value)
+          await loadWorldData()
+          Renderer.initialize(canvas.value)
       }
     });
 
@@ -44,7 +44,7 @@ export default {
 
 async function loadWorldData() {
   const mapData = await loadBMPData('./assets/map4.png') as number[][]
-  Data.setWorldMap(mapData)
+  WorldData.setWorldMap(mapData)
 }
 </script>
 

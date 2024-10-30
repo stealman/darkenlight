@@ -1,16 +1,16 @@
-import {Scene, StandardMaterial, MeshBuilder, VertexBuffer, Color3, Texture, Vector3} from "@babylonjs/core";
+import {
+    Scene,
+    StandardMaterial,
+    MeshBuilder,
+    VertexBuffer,
+    Color3,
+    Texture,
+    Vector3,
+    Mesh,
+    TransformNode,
+} from '@babylonjs/core'
 
-export class Block {
-  position: Vector3
-  material: number
-
-  constructor(position: Vector3, material: number) {
-    this.position = position
-    this.material = material
-  }
-}
-
-export function createCube(scene?: Scene) {
+export function createCube(scene: Scene, parent: TransformNode) {
   const cube = MeshBuilder.CreateBox("cube", { width: 1, depth: 1, height: 1 }, scene);
 
   const uvs = [
@@ -52,7 +52,17 @@ export function createCube(scene?: Scene) {
   ];
 
   cube.setVerticesData(VertexBuffer.UVKind, uvs);
+  cube.parent = parent
   return cube;
+}
+
+export function createHorizontalPlane(scene: Scene, parent: TransformNode, size: number, yPos: number): Mesh {
+    const plane = MeshBuilder.CreatePlane('grassPlane', {width: size, height: size}, scene)
+    plane.rotation.x = Math.PI / 2
+    plane.position.y = yPos
+    const mesh = Mesh.MergeMeshes([plane], true) as Mesh
+    mesh.parent = parent
+    return mesh
 }
 
 export function getGrassMaterial(scene: Scene) {
@@ -61,11 +71,27 @@ export function getGrassMaterial(scene: Scene) {
     mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
 
     const diffuseTexture = new Texture('./assets/grass.png', scene)
-    //const normalTexture = new Texture('./assets/normal.jpg', scene)
-
     mat.diffuseTexture = diffuseTexture
-    //mat.bumpTexture = normalTexture
+    return mat
+}
 
+export function getGrassPlaneMaterial(scene: Scene) {
+    const mat = new StandardMaterial('grassPlaneMaterial', scene)
+    mat.specularColor = new Color3(0, 0, 0)
+    mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
+
+    const diffuseTexture = new Texture('./assets/grass_plane.png', scene)
+    mat.diffuseTexture = diffuseTexture
+    return mat
+}
+
+export function getDirtPlaneMaterial(scene: Scene) {
+    const mat = new StandardMaterial('dirtPlaneMaterial', scene)
+    mat.specularColor = new Color3(0, 0, 0)
+    mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
+
+    const diffuseTexture = new Texture('./assets/dirt_plane.png', scene)
+    mat.diffuseTexture = diffuseTexture
     return mat
 }
 

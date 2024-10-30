@@ -11,15 +11,21 @@ export const MyPlayer = {
         this.playerData = new PlayerData(100, 300, 300, 0)
 
         this.charModel = MeshBuilder.CreateBox("plr", {width: 1, depth: 1, height: 2}, scene);
-        this.charModel.position = new Vector3(0, 13.5, 0);
+        this.charModel.position = new Vector3(0, 0, 0);
     },
 
-    move(x: number, z: number) {
-        this.playerData.xPos -= (x > 0) ? 1 : -1
-        this.playerData.zPos -= (z > 0) ? 1 : -1
+    onFrame() {
+        if (this.playerData.moveAngle != null) {
+            this.playerData.xPos -= Math.cos(this.playerData.moveAngle + Math.PI / 4) * 0.1
+            this.playerData.zPos += Math.sin(this.playerData.moveAngle + Math.PI / 4) * 0.1
+        }
     },
 
     setModelYPos(y: number) {
         this.charModel!.position.y = y
+    },
+
+    setMoveAngle(angle: number) {
+        this.playerData.moveAngle = angle
     }
 }

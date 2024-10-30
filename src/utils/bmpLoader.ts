@@ -28,10 +28,6 @@ async function loadGrayscaleBMPFromAssets(assetPath: string): Promise<unknown> {
                     const grayscaleValue = data[pixelIndex];
 
                     result[i][j] = grayscaleValue;
-                    //result[i * 2][j * 2] = grayscaleValue;
-                    //result[1 + i * 2][j * 2] = grayscaleValue;
-                  //  result[1 + i * 2][1 + j * 2] = grayscaleValue;
-                    //result[i * 2][1 + j * 2] = grayscaleValue;
                 }
             }
 
