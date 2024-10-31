@@ -7,10 +7,10 @@ export const WorldData = {
 
         for (let i = 0; i < data.length; i++) {
             for (let j = 0; j < data[i].length; j++) {
-                const height = Math.floor(data[i][j] / 6)
+                const height = Math.floor(data[i][j] / 8)
                 let blockType = 1
 
-                if (height >= 6) {
+                if (height >= 5) {
                     blockType = 2
                 }
 
@@ -19,11 +19,11 @@ export const WorldData = {
         }
 
         this.planeBlockMap = Array.from({ length: this.blockMap.length }, () => Array(this.blockMap[0].length).fill(false))
-        this.identifyPlainBlocks()
+        this.identifyPlaneBlocks()
         // this.findPlains4x4()
     },
 
-    identifyPlainBlocks() {
+    identifyPlaneBlocks() {
         const rows = this.blockMap.length
         const cols = this.blockMap[0].length
 
@@ -103,7 +103,7 @@ export const WorldData = {
     }
 }
 
-class MapBlock {
+export class MapBlock {
     height: number
     type: number
 

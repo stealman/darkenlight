@@ -9,11 +9,13 @@ import {
 import {UnwrapRef} from "vue"
 import '@babylonjs/inspector'
 import {Debug} from "@babylonjs/core/Legacy/legacy"
-import {initializeController} from "@/controlls/controller"
+import { Controller } from '@/controlls/controller'
 import {MyPlayer} from "@/babylon/character/myPlayer"
 import screenFull from 'screenfull'
 import {Settings} from "@/settings/settings";
 import {WorldRenderer} from "@/babylon/world/worldRenderer";
+import { ScreenUtils } from '@/utils/screenUtils'
+import { MiniMap } from '@/utils/minimap'
 
 /**
  * Main Renderer
@@ -26,6 +28,8 @@ export const Renderer = {
 
     lastPos: null as Vector3 | null,
     fps: '0' as string,
+    frame: 0 as number,
+    lastFrameTime: 0 as number,
 
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
@@ -56,17 +60,18 @@ export const Renderer = {
         }
 
         // Initialize game objects and managers
-        initializeController(scene)
+        Controller.initializeController(scene)
         WorldRenderer.initialize(scene, this.shadow)
+        MiniMap.initializeMiniMap()
         this.light.parent = WorldRenderer.worldParentNode
 
         MyPlayer.initialize(scene)
 
         // Create the camera
-        this.camera = new FreeCamera('camera1', new Vector3(-16, 16, -16), scene)
+        this.camera = new FreeCamera('camera1', new Vector3(-14, 14, -14), scene)
         this.camera.parent = MyPlayer.charModel
-        this.camera.setTarget(new Vector3(0, -2, 0))
-        // camera.attachControl(canvasRef, true)
+        this.camera.setTarget(new Vector3(0, -4, 0))
+        // this.camera.attachControl(canvasRef, true)
 
         // Debug layer
         if (!Settings.touchEnabled) {
@@ -87,6 +92,7 @@ export const Renderer = {
 
         window.addEventListener('resize', () => {
             this.engine?.resize()
+            ScreenUtils.onResize()
         })
 
         this.initialized = true
@@ -100,31 +106,38 @@ export const Renderer = {
         if (!this.initialized) {
             return
         }
+        this.frame++
+        const actualTime = new Date().getTime()
+        const timeRate = (actualTime - this.lastFrameTime) / 1000
+        this.lastFrameTime = actualTime
+
         this.fps = this.engine?.getFps().toFixed();
         this.actualizeDebug()
 
-        MyPlayer.onFrame()
+        MyPlayer.onFrame(timeRate)
+
+        if (this.frame % 150 === 0) {
+            MiniMap.updateMiniMap()
+        }
 
         const pos = MyPlayer.playerData.getPositionRounded()
 
         // If the player moved, render the world
         if (this.lastPos == null || pos.x !== this.lastPos.x || pos.z !== this.lastPos.z) {
             WorldRenderer.renderWorld()
-
             this.lastPos = pos
 
-            // Update shadow map
             if (!Settings.touchEnabled) {
                 this.shadow.getShadowMap().refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE
             }
         }
         WorldRenderer.updateWorldParentNode()
-
         scene.render()
     },
 
     actualizeDebug() {
-        document.getElementById("fpsLabel").innerHTML = this.fps + " FPS";
+        document.getElementById("fpsLabel").innerHTML = "FPS: " + this.fps;
+        document.getElementById("posLabel").innerHTML = "POS: " + MyPlayer.playerData.getPositionRounded().toString();
     },
 
     requestFullscreen() {

@@ -5,7 +5,6 @@ import {
     VertexBuffer,
     Color3,
     Texture,
-    Vector3,
     Mesh,
     TransformNode,
 } from '@babylonjs/core'
@@ -49,11 +48,12 @@ export function createCube(scene: Scene, parent: TransformNode) {
     2/4, 2/3,  // Bottom-right
     2/4, 1.0,  // Top-right
     1/4, 1.0   // Top-left
-  ];
+    ];
 
-  cube.setVerticesData(VertexBuffer.UVKind, uvs);
-  cube.parent = parent
-  return cube;
+    cube.setVerticesData(VertexBuffer.UVKind, uvs);
+    cube.parent = parent
+    cube.position.y = -0.5
+    return cube;
 }
 
 export function createHorizontalPlane(scene: Scene, parent: TransformNode, size: number, yPos: number): Mesh {
@@ -62,6 +62,7 @@ export function createHorizontalPlane(scene: Scene, parent: TransformNode, size:
     plane.position.y = yPos
     const mesh = Mesh.MergeMeshes([plane], true) as Mesh
     mesh.parent = parent
+    mesh.thinInstanceEnablePicking = true
     return mesh
 }
 

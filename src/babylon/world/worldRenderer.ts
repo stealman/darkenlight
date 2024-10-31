@@ -13,9 +13,6 @@ import {Settings} from "@/settings/settings";
 
 export const WorldRenderer = {
     basicBlockTypes: 3,
-    basicBlockBuffers: [] as Float32Array[],
-    basicPlaneBuffers: [] as Float32Array[],
-    bufferResizeThreshold: 512,
 
     grassCube: null as Mesh | null,
     grassPlane: null as Mesh | null,
@@ -29,16 +26,16 @@ export const WorldRenderer = {
 
         this.grassCube = createCube(scene, this.worldParentNode)
         this.grassCube.material = getGrassMaterial(scene)
-        this.grassPlane = createHorizontalPlane(scene, this.worldParentNode, 1, 0.5)
+        this.grassCube.isPickable = true
+        this.grassCube.thinInstanceEnablePicking = true
+
+        this.grassPlane = createHorizontalPlane(scene, this.worldParentNode, 1, 0)
         this.grassPlane.material = getGrassPlaneMaterial(scene)
 
         this.dirtCube = createCube(scene, this.worldParentNode)
         this.dirtCube.material = getDirtMaterial(scene)
-        this.dirtPlane = createHorizontalPlane(scene, this.worldParentNode,1, 0.5)
+        this.dirtPlane = createHorizontalPlane(scene, this.worldParentNode,1, 0)
         this.dirtPlane.material = getDirtPlaneMaterial(scene)
-
-        this.basicBlockBuffers = Array.from({ length: this.basicBlockTypes }, () => new Float32Array(this.bufferResizeThreshold * 16))
-        this.basicPlaneBuffers = Array.from({ length: this.basicBlockTypes }, () => new Float32Array(this.bufferResizeThreshold * 16))
 
         if (!Settings.touchEnabled) {
             this.grassCube.receiveShadows = true
@@ -52,11 +49,11 @@ export const WorldRenderer = {
         }
 
         // Water planes
-        const plane = createHorizontalPlane(scene, this.worldParentNode,128, 0)
+        const plane = createHorizontalPlane(scene, this.worldParentNode,256, 0)
         plane.material = getWaterMaterial(scene)
-        plane.position.y = 2.4
+        plane.position.y = 1
 
-        for (let i = 2.65; i <= 6.5; i += 0.25) {
+        for (let i = 1.25; i <= 4.75; i += 0.25) {
             const instance = plane.createInstance('plane' + i)
             instance.position.y = i
         }
@@ -71,13 +68,13 @@ export const WorldRenderer = {
         const planeBlockMap = WorldData.getPlaneBlockMap()
 
         // Init array and fill with empty arrays for each block type
-        const blockMatrices = Array.from({ length: this.basicBlockBuffers.length }, () => [])
-        const planeMatrices = Array.from({ length: this.basicPlaneBuffers.length }, () => [])
+        const blockMatrices = Array.from({ length: 3 }, () => [])
+        const planeMatrices = Array.from({ length: 3 }, () => [])
 
-        for (let x = myPos.x - 32; x < myPos.x + 32; x++) {
-            for (let z = myPos.z - 32; z < myPos.z + 32; z++) {
+        for (let x = Math.max(0, myPos.x - 20); x < Math.min(map.length, myPos.x + 56); x++) {
+            for (let z = Math.max(0, myPos.z - 20); z < Math.min(map.length, myPos.z + 60); z++) {
                 const block = map[x][z]
-                const matrix = Matrix.Translation(myPos.x - x, block.height, myPos.z - z);
+                const matrix = Matrix.Translation( x - myPos.x, block.height, z - myPos.z);
 
                 if (block.type > 0) {
                     if (planeBlockMap[x][z]) {
@@ -88,43 +85,30 @@ export const WorldRenderer = {
                 }
             }
         }
-
-        // Update buffer size if needed and copy matrices
-        for (let i = 0; i < this.basicBlockBuffers.length; i++) {
-            if (blockMatrices[i].length > this.basicBlockBuffers[i].length / 16) {
-                this.basicBlockBuffers[i] = new Float32Array((blockMatrices[i].length + this.bufferResizeThreshold) * 16)
-            } else if (blockMatrices[i].length + this.bufferResizeThreshold < this.basicBlockBuffers[i].length / 16) {
-                this.basicBlockBuffers[i] = new Float32Array((blockMatrices[i].length) * 16)
-            }
-
-            blockMatrices[i].forEach((matrix, index) => {
-                matrix.copyToArray(this.basicBlockBuffers[i], index * 16)
-            })
-        }
-
-        for (let i = 0; i < this.basicPlaneBuffers.length; i++) {
-            if (planeMatrices[i].length > this.basicPlaneBuffers[i].length / 16) {
-                this.basicPlaneBuffers[i] = new Float32Array((planeMatrices[i].length + this.bufferResizeThreshold) * 16)
-            } else if (planeMatrices[i].length + this.bufferResizeThreshold < this.basicPlaneBuffers[i].length / 16) {
-                this.basicPlaneBuffers[i] = new Float32Array((planeMatrices[i].length) * 16)
-            }
-
-            planeMatrices[i].forEach((matrix, index) => {
-                matrix.copyToArray(this.basicPlaneBuffers[i], index * 16)
-            })
-        }
+        const bufferBlock1 = this.createBuffer(blockMatrices[1])
+        const bufferBlock2 = this.createBuffer(blockMatrices[2])
+        const bufferPlane1 = this.createBuffer(planeMatrices[1])
+        const bufferPlane2 = this.createBuffer(planeMatrices[2])
 
         // Apply buffers to the cubes and planes
-        this.dirtCube?.thinInstanceSetBuffer("matrix", this.basicBlockBuffers[1], 16)
-        this.grassCube?.thinInstanceSetBuffer("matrix", this.basicBlockBuffers[2], 16)
-        this.dirtPlane?.thinInstanceSetBuffer("matrix", this.basicPlaneBuffers[1], 16)
-        this.grassPlane?.thinInstanceSetBuffer("matrix", this.basicPlaneBuffers[2], 16)
+        this.dirtCube?.thinInstanceSetBuffer("matrix", bufferBlock1, 16)
+        this.grassCube?.thinInstanceSetBuffer("matrix", bufferBlock2, 16)
+        this.dirtPlane?.thinInstanceSetBuffer("matrix", bufferPlane1, 16)
+        this.grassPlane?.thinInstanceSetBuffer("matrix", bufferPlane2, 16)
+    },
+
+    createBuffer(matrices) {
+        const buffer = new Float32Array(matrices.length * 16)
+        matrices.forEach((matrix, index) => {
+            matrix.copyToArray(buffer, index * 16)
+        })
+
+        return buffer
     },
 
     updateWorldParentNode() {
-        const map = WorldData.getBlockMap()
-        this.worldParentNode!.position.y = -1.5 -map[MyPlayer.playerData.getPositionRounded().x][MyPlayer.playerData.getPositionRounded().z].height
-        this.worldParentNode!.position.x = MyPlayer.playerData.getOffset().x
-        this.worldParentNode!.position.z = MyPlayer.playerData.getOffset().z
+        this.worldParentNode!.position.y = -MyPlayer.playerData.modelYpos
+        this.worldParentNode!.position.x = -MyPlayer.playerData.getOffset().x
+        this.worldParentNode!.position.z = -MyPlayer.playerData.getOffset().z
     }
 }
