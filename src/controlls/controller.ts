@@ -55,7 +55,7 @@ export const Controller = {
     },
 
     pointerPressed(pointerInfo) {
-        const myCharPosition = ScreenUtils.getScreenPosition(MyPlayer.charModel!)
+        const myCharPosition = ScreenUtils.getScreenPosition(MyPlayer.charModel!.model)
         const dx = pointerInfo.event.clientX - myCharPosition.x
         const dy = pointerInfo.event.clientY - myCharPosition.y
 

@@ -2,7 +2,7 @@ import { Vector3 } from '@babylonjs/core'
 
 export class PlayerData {
     hp: number
-    moveSpeed: number = 3
+    moveSpeed: number = 3.5
     xPos: number
     zPos: number
     yPos: number

@@ -1,20 +1,21 @@
 import {PlayerData} from "@/data/playerlData";
-import {Mesh, MeshBuilder, Scene, Vector3} from "@babylonjs/core";
+import {
+    Scene,
+    Vector3,
+} from '@babylonjs/core'
 import { WorldData } from '@/babylon/world/worldData'
+import { CharacterModel } from '@/babylon/character/characterModel'
 
 export const MyPlayer = {
     playerData: new PlayerData(0, 0, 0, 0),
     scene: null as Scene | null,
-    charModel: null as Mesh | null,
+    charModel: null as CharacterModel | null,
 
     initialize(scene: Scene) {
-        this.scene = scene
+        this.charModel = new CharacterModel(scene)
         this.playerData = new PlayerData(100, 355, 575, 0)
         this.playerData.yPos = this.calculateYPos()
         this.playerData.modelYpos = this.playerData.yPos
-
-        this.charModel = MeshBuilder.CreateBox("plr", {width: 0.6, depth: 0.6, height: 1.5}, scene);
-        this.charModel.position = new Vector3(0, 0.75, 0);
     },
 
     onFrame(timeRate: number) {
@@ -36,14 +37,25 @@ export const MyPlayer = {
             this.playerData.zPos -= Math.sin(this.playerData.moveAngle + Math.PI / 4) * this.playerData.moveSpeed * timeRate
             this.playerData.yPos = this.calculateYPos()
 
-            // approximate modelYpos to the yPos by 0.01
+            // Approximate modelYpos to the yPos
             this.playerData.modelYpos += (this.playerData.yPos - this.playerData.modelYpos) * 15 * timeRate
+
+            // Approximate model rotation to the move angle
+            let angleDifference = this.playerData.moveAngle - this.charModel!.model.rotation.y
+            if (Math.abs(angleDifference) > Math.PI) {
+                angleDifference += angleDifference > 0 ? -2 * Math.PI : 2 * Math.PI;
+            }
+
+            this.charModel!.model.rotation.y += angleDifference * 15 * timeRate;
+            this.charModel?.startRunAnimation()
+        } else {
+            this.charModel?.stopAnimation()
         }
     },
 
     calculateYPos() {
         const map = WorldData.getBlockMap()
-        const coveredBlocks = this.getCoveredBlocks(this.playerData.xPos, this.playerData.zPos, 0.6)
+        const coveredBlocks = this.getCoveredBlocks(this.playerData.xPos, this.playerData.zPos, 0.4)
 
         // From map get all blocks that are covered by the player and find the highest one
         let highest = 0

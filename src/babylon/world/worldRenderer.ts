@@ -52,6 +52,7 @@ export const WorldRenderer = {
         const plane = createHorizontalPlane(scene, this.worldParentNode,256, 0)
         plane.material = getWaterMaterial(scene)
         plane.position.y = 1
+        plane.isPickable = false
 
         for (let i = 1.25; i <= 4.75; i += 0.25) {
             const instance = plane.createInstance('plane' + i)

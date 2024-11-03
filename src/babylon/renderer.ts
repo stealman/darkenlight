@@ -27,7 +27,7 @@ export const Renderer = {
     camera: null as FreeCamera | null,
 
     lastPos: null as Vector3 | null,
-    fps: '0' as string,
+    fps: 0 as number,
     frame: 0 as number,
     lastFrameTime: 0 as number,
 
@@ -69,9 +69,9 @@ export const Renderer = {
 
         // Create the camera
         this.camera = new FreeCamera('camera1', new Vector3(-14, 14, -14), scene)
-        this.camera.parent = MyPlayer.charModel
+        this.camera.parent = MyPlayer.charModel!.model
         this.camera.setTarget(new Vector3(0, -4, 0))
-        // this.camera.attachControl(canvasRef, true)
+        //this.camera.attachControl(canvasRef, true)
 
         // Debug layer
         if (!Settings.touchEnabled) {
@@ -111,7 +111,7 @@ export const Renderer = {
         const timeRate = (actualTime - this.lastFrameTime) / 1000
         this.lastFrameTime = actualTime
 
-        this.fps = this.engine?.getFps().toFixed();
+        this.fps = parseInt(this.engine?.getFps().toFixed());
         this.actualizeDebug()
 
         MyPlayer.onFrame(timeRate)
