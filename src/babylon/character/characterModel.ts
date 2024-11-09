@@ -8,18 +8,20 @@ import {
     Texture,
     Vector3,
 } from '@babylonjs/core'
-import { Renderer } from '@/babylon/renderer'
+import { PlayerData } from '@/data/playerlData'
 
 export class CharacterModel {
+    playerData: PlayerData
 
     model: AbstractMesh | null
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
     idleAnim: AnimationGroup | undefined
     actualAnim: AnimationGroup | undefined
-    transitionInterval
+    animTransition: AnimTransition | null
 
-    constructor(scene: Scene) {
+    constructor(playerData: PlayerData, scene: Scene) {
+        this.playerData = playerData
         this.model = null
 
         SceneLoader.ImportMeshAsync(
@@ -95,51 +97,110 @@ export class CharacterModel {
     }
 
     transitionToAnimation(targetAnim: AnimationGroup | undefined, duration: number, loop = false, speed = 1.0) {
-        if (!targetAnim) return;
+        if (!this.actualAnim || !targetAnim || this.actualAnim === targetAnim) return;
 
-        // Clear any ongoing transition interval, stop the current animation and start the target animation
-        if (this.transitionInterval !== undefined) {
-            clearInterval(this.transitionInterval)
-            this.transitionInterval = undefined
-            this.actualAnim?.stop()
-            targetAnim.start(loop, speed, targetAnim['startFrame'], targetAnim['endFrame'])
-            targetAnim.setWeightForAllAnimatables(1)
-            return
+        // If there is already an ongoing transition
+        if (this.animTransition) {
+            // Force end the transition if the target animation is different
+            if (this.animTransition.toAnimation !== targetAnim) {
+                this.animTransition.forceEnd()
+            } else {
+                // If the target animation is the same, just return
+                return
+            }
         }
 
-        let startWeight = 1.0
-        let endWeight = 0.0
-        const frameRate = Renderer.fps
-        const weightChange = 1.0 / (duration * frameRate);
-
-        // Start target animation but set its weight to 0 initially
-        targetAnim.start(loop, speed, targetAnim['startFrame'], targetAnim['endFrame'])
-        console.log(targetAnim['endFrame'])
-
-        targetAnim.setWeightForAllAnimatables(0)
-        this.actualAnim?.setWeightForAllAnimatables(1)
-
-        const actualAnim = this.actualAnim
-        this.transitionInterval = setInterval(() => {
-            startWeight = Math.max(0, startWeight - weightChange)
-            endWeight = Math.min(1, endWeight + weightChange)
-
-            this.actualAnim?.setWeightForAllAnimatables(startWeight)
-            targetAnim.setWeightForAllAnimatables(endWeight)
-
-            // End transition when fully transitioned to the target animation
-            if (startWeight === 0 && endWeight === 1) {
-                actualAnim?.stop()
-                clearInterval(this.transitionInterval)
-                this.transitionInterval = undefined
-            }
-        }, 1000 / frameRate)
+        this.animTransition = new AnimTransition(duration, this.actualAnim, targetAnim, loop, speed)
     }
 
-    rotate(vector: Vector3) {
-        if (this.model) {
-            this.model.rotation = vector
+    onFrame(timeRate: number) {
+        if (this.animTransition) {
+            this.animTransition.onFrame(timeRate)
+            if (this.animTransition.ended) {
+                this.animTransition = null
+            }
         }
 
+        if (this.playerData.moveAngle != null) {
+            this.resolveModelYpos(timeRate)
+            this.resolveModelRotation(timeRate)
+        }
+    }
+
+    /**
+     * Approximate model Y position to the player Y position
+     */
+    resolveModelYpos(timeRate: number) {
+        this.playerData.modelYpos += (this.playerData.yPos - this.playerData.modelYpos) * this.playerData.yMoveSpeed * timeRate
+    }
+
+    /**
+     * Approximate model rotation to the move angle
+     */
+    resolveModelRotation(timeRate: number) {
+        // Approximate model rotation to the move angle
+        let angleDifference = this.playerData.moveAngle - this.model.rotation.y;
+        const rotationSpeed = this.playerData.rotationSpeed * timeRate;
+        if (angleDifference > Math.PI) {
+            angleDifference -= 2 * Math.PI;
+        } else if (angleDifference < -Math.PI) {
+            angleDifference += 2 * Math.PI;
+        }
+
+        if (Math.abs(angleDifference) < rotationSpeed) {
+            this.model.rotation.y = this.playerData.moveAngle;
+        } else {
+            this.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
+        }
+        this.playerData.modelRotation = this.model.rotation.y;
+    }
+}
+
+class AnimTransition {
+    duration: number
+    fromAnimation: AnimationGroup
+    toAnimation: AnimationGroup
+    loop: boolean
+    speed: number
+
+    fromWeight: number
+    toWeight: number
+    ended: boolean
+
+    constructor(duration: number, fromAnimation: AnimationGroup, toAnimation: AnimationGroup, loop = false, speed = 1.0) {
+        this.duration = duration
+        this.fromAnimation = fromAnimation
+        this.toAnimation = toAnimation
+        this.loop = loop
+        this.speed = speed
+        this.ended = false
+
+        this.fromWeight = 1
+        this.toWeight = 0
+
+        // Start target animation but set its weight to 0 initially
+        this.toAnimation.start(loop, speed, this.toAnimation['startFrame'], this.toAnimation['endFrame'])
+        this.toAnimation.setWeightForAllAnimatables(0)
+        this.fromAnimation.setWeightForAllAnimatables(1)
+    }
+
+    onFrame(timeRate: number) {
+        const weightChange = timeRate / this.duration
+
+        this.fromWeight = Math.max(0, this.fromWeight - weightChange)
+        this.toWeight = Math.min(1, this.toWeight + weightChange)
+
+        this.fromAnimation.setWeightForAllAnimatables(this.fromWeight)
+        this.toAnimation.setWeightForAllAnimatables(this.toWeight)
+
+        if (this.fromWeight === 0 && this.toWeight === 1) {
+            this.fromAnimation.stop()
+            this.ended = true
+        }
+    }
+
+    forceEnd() {
+        this.fromAnimation.stop()
+        this.toAnimation.setWeightForAllAnimatables(1)
     }
 }

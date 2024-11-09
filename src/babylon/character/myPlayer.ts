@@ -11,9 +11,11 @@ export const MyPlayer = {
     scene: null as Scene | null,
     charModel: null as CharacterModel | null,
 
+    movementType: 'WALK',
+
     initialize(scene: Scene) {
-        this.charModel = new CharacterModel(scene)
         this.playerData = new PlayerData(100, 355, 575, 0)
+        this.charModel = new CharacterModel(this.playerData, scene)
         this.playerData.yPos = this.calculateYPos()
         this.playerData.modelYpos = this.playerData.yPos
     },
@@ -33,24 +35,23 @@ export const MyPlayer = {
         }
 
         if (this.playerData.moveAngle != null) {
-            this.playerData.xPos += Math.cos(this.playerData.moveAngle + Math.PI / 4) * this.playerData.moveSpeed * timeRate
-            this.playerData.zPos -= Math.sin(this.playerData.moveAngle + Math.PI / 4) * this.playerData.moveSpeed * timeRate
+            const speed = this.movementType === 'RUN' ? this.playerData.runSpeed : this.playerData.walkSpeed
+            this.playerData.xPos += Math.cos(this.playerData.moveAngle + Math.PI / 4) * speed * timeRate
+            this.playerData.zPos -= Math.sin(this.playerData.moveAngle + Math.PI / 4) * speed * timeRate
             this.playerData.yPos = this.calculateYPos()
 
-            // Approximate modelYpos to the yPos
-            this.playerData.modelYpos += (this.playerData.yPos - this.playerData.modelYpos) * 15 * timeRate
 
-            // Approximate model rotation to the move angle
-            let angleDifference = this.playerData.moveAngle - this.charModel!.model.rotation.y
-            if (Math.abs(angleDifference) > Math.PI) {
-                angleDifference += angleDifference > 0 ? -2 * Math.PI : 2 * Math.PI;
+
+            if (this.movementType === 'RUN') {
+                this.charModel?.startRunAnimation()
+            } else {
+                this.charModel?.startWalkAnimation()
             }
-
-            this.charModel!.model.rotation.y += angleDifference * 15 * timeRate;
-            this.charModel?.startRunAnimation()
         } else {
             this.charModel?.stopAnimation()
         }
+
+        this.charModel?.onFrame(timeRate)
     },
 
     calculateYPos() {
@@ -85,8 +86,9 @@ export const MyPlayer = {
         return coveredBlocks;
     },
 
-    setMoveAngle(angle: number | null) {
+    setMoveTypeAngle(movementType: string, angle: number | null) {
         this.playerData.moveAngle = angle
+        this.movementType = movementType
     },
 
     setTargetPoint(point: Vector3 | null) {
@@ -96,6 +98,10 @@ export const MyPlayer = {
         } else {
             point.x += this.playerData.xPos
             point.z += this.playerData.zPos
+
+            // if distance > 3 then movementType is run, otherwise walk
+            const distance = Vector3.Distance(point, new Vector3(this.playerData.xPos, 0, this.playerData.zPos))
+            this.movementType = distance > 4 ? 'RUN' : 'WALK'
 
             const angle = Math.atan2(-(point.z - this.playerData.zPos), point.x - this.playerData.xPos)
             this.playerData.moveAngle = angle - Math.PI / 4
