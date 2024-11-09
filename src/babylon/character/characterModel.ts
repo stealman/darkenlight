@@ -122,25 +122,37 @@ export class CharacterModel {
         }
 
         if (this.playerData.moveAngle != null) {
-            // Approximate modelYpos to the yPos
-            this.playerData.modelYpos += (this.playerData.yPos - this.playerData.modelYpos) * this.playerData.yMoveSpeed * timeRate
-
-            // Approximate model rotation to the move angle
-            let angleDifference = this.playerData.moveAngle - this.model.rotation.y;
-            const rotationSpeed = this.playerData.rotationSpeed * timeRate;
-            if (angleDifference > Math.PI) {
-                angleDifference -= 2 * Math.PI;
-            } else if (angleDifference < -Math.PI) {
-                angleDifference += 2 * Math.PI;
-            }
-
-            if (Math.abs(angleDifference) < rotationSpeed) {
-                this.model.rotation.y = this.playerData.moveAngle;
-            } else {
-                this.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
-            }
-            this.playerData.modelRotation = this.model.rotation.y;
+            this.resolveModelYpos(timeRate)
+            this.resolveModelRotation(timeRate)
         }
+    }
+
+    /**
+     * Approximate model Y position to the player Y position
+     */
+    resolveModelYpos(timeRate: number) {
+        this.playerData.modelYpos += (this.playerData.yPos - this.playerData.modelYpos) * this.playerData.yMoveSpeed * timeRate
+    }
+
+    /**
+     * Approximate model rotation to the move angle
+     */
+    resolveModelRotation(timeRate: number) {
+        // Approximate model rotation to the move angle
+        let angleDifference = this.playerData.moveAngle - this.model.rotation.y;
+        const rotationSpeed = this.playerData.rotationSpeed * timeRate;
+        if (angleDifference > Math.PI) {
+            angleDifference -= 2 * Math.PI;
+        } else if (angleDifference < -Math.PI) {
+            angleDifference += 2 * Math.PI;
+        }
+
+        if (Math.abs(angleDifference) < rotationSpeed) {
+            this.model.rotation.y = this.playerData.moveAngle;
+        } else {
+            this.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
+        }
+        this.playerData.modelRotation = this.model.rotation.y;
     }
 }
 
