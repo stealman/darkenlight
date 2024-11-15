@@ -1,56 +1,56 @@
 import {WorldData} from "@/babylon/world/worldData";
-import { Matrix, Mesh, Scene, ShadowGenerator, TransformNode } from '@babylonjs/core'
-import {MyPlayer} from "@/babylon/character/myPlayer";
 import {
-    createCube,
-    createHorizontalPlane,
-    getDirtMaterial, getDirtPlaneMaterial,
-    getGrassMaterial,
-    getGrassPlaneMaterial,
-    getWaterMaterial,
-} from '@/babylon/block'
+    Matrix,
+    Mesh,
+    Scene,
+    ShadowGenerator,
+    TransformNode, Vector2, Vector3,
+} from '@babylonjs/core'
+import {MyPlayer} from "@/babylon/character/myPlayer";
 import {Settings} from "@/settings/settings";
+import { Builder } from '@/babylon/builder'
+import { Materials } from '@/babylon/materials'
+import { TreeManager } from '@/babylon/world/treeManager'
 
 export const WorldRenderer = {
-    basicBlockTypes: 3,
+    terrainBlock1: null as Mesh | null,
+    terrainPlane: null as Mesh | null,
 
-    grassCube: null as Mesh | null,
-    grassPlane: null as Mesh | null,
-    dirtCube: null as Mesh | null,
-    dirtPlane: null as Mesh | null,
+    treeWoodBlock: null as Mesh | null,
+    symetricBlock1: null as Mesh | null,
 
     worldParentNode: null as TransformNode | null,
 
     initialize(scene: Scene, shadow: ShadowGenerator) {
         this.worldParentNode = new TransformNode("worldNode", scene)
 
-        this.grassCube = createCube(scene, this.worldParentNode)
-        this.grassCube.material = getGrassMaterial(scene)
-        this.grassCube.isPickable = true
-        this.grassCube.thinInstanceEnablePicking = true
+        this.terrainBlock1 = Builder.createBlockWithFaces(scene, this.worldParentNode)
+        this.terrainBlock1.material = Materials.getTerrainMaterial1(scene)
+        this.terrainBlock1.isPickable = true
+        this.terrainBlock1.thinInstanceEnablePicking = true
 
-        this.grassPlane = createHorizontalPlane(scene, this.worldParentNode, 1, 0)
-        this.grassPlane.material = getGrassPlaneMaterial(scene)
+        this.terrainPlane = Builder.createHorizontalPlane(scene, this.worldParentNode, 1, 0)
+        this.terrainPlane.material = Materials.getPlaneMaterial(scene)
 
-        this.dirtCube = createCube(scene, this.worldParentNode)
-        this.dirtCube.material = getDirtMaterial(scene)
-        this.dirtPlane = createHorizontalPlane(scene, this.worldParentNode,1, 0)
-        this.dirtPlane.material = getDirtPlaneMaterial(scene)
+        this.treeWoodBlock = Builder.createBlockWithFaces(scene, this.worldParentNode, 0.5)
+        this.treeWoodBlock.material = Materials.getTreeWoodMaterial(scene)
+
+        this.symetricBlock1 = Builder.createBlock(scene, this.worldParentNode)
+        this.symetricBlock1.material = Materials.getSymBlockMaterial1(scene)
 
         if (!Settings.touchEnabled) {
-            this.grassCube.receiveShadows = true
-            this.grassPlane.receiveShadows = true
-            this.dirtCube.receiveShadows = true
+            this.terrainBlock1.receiveShadows = true
+            this.terrainPlane.receiveShadows = true
 
-            shadow.addShadowCaster(this.grassCube)
-            shadow.addShadowCaster(this.grassPlane)
-            shadow.addShadowCaster(this.dirtCube)
-            shadow.addShadowCaster(this.dirtPlane)
+            shadow.addShadowCaster(this.terrainBlock1)
+            shadow.addShadowCaster(this.terrainPlane)
+            shadow.addShadowCaster(this.treeWoodBlock)
+            shadow.addShadowCaster(this.symetricBlock1)
         }
 
         // Water planes
-        const plane = createHorizontalPlane(scene, this.worldParentNode,256, 0)
-        plane.material = getWaterMaterial(scene)
+        const plane = Builder.createHorizontalPlane(scene, this.worldParentNode,256, 0)
+        plane.material = Materials.getWaterMaterial(scene)
         plane.position.y = 1
         plane.isPickable = false
 
@@ -58,6 +58,8 @@ export const WorldRenderer = {
             const instance = plane.createInstance('plane' + i)
             instance.position.y = i
         }
+
+        TreeManager.addTree()
     },
 
     /**
@@ -68,9 +70,10 @@ export const WorldRenderer = {
         const map = WorldData.getBlockMap()
         const planeBlockMap = WorldData.getPlaneBlockMap()
 
-        // Init array and fill with empty arrays for each block type
-        const blockMatrices = Array.from({ length: 3 }, () => [])
-        const planeMatrices = Array.from({ length: 3 }, () => [])
+        const tBlockMatrices1 = []
+        const tBlockUvData1 = []
+        const planeMatrices = []
+        const planeUvData = []
 
         for (let x = Math.max(0, myPos.x - 20); x < Math.min(map.length, myPos.x + 56); x++) {
             for (let z = Math.max(0, myPos.z - 20); z < Math.min(map.length, myPos.z + 60); z++) {
@@ -79,29 +82,56 @@ export const WorldRenderer = {
 
                 if (block.type > 0) {
                     if (planeBlockMap[x][z]) {
-                        planeMatrices[planeBlockMap[x][z].type].push(matrix)
+                        planeMatrices.push(matrix)
+
+                        if (planeBlockMap[x][z].type === 1) {
+                            planeUvData.push(new Vector2(2.5, 6.5))
+                        }
+                        if (planeBlockMap[x][z].type === 2) {
+                            planeUvData.push(new Vector2(0.5, 6.5))
+                        }
                     } else {
-                        blockMatrices[block.type].push(matrix)
+                        tBlockMatrices1.push(matrix)
+                        if (block.type === 1) {
+                            tBlockUvData1.push(new Vector2(2.5, 2.5))
+                        }
+                        if (block.type === 2) {
+                            tBlockUvData1.push(new Vector2(0.5, 2.5))
+                        }
                     }
                 }
             }
         }
-        const bufferBlock1 = this.createBuffer(blockMatrices[1])
-        const bufferBlock2 = this.createBuffer(blockMatrices[2])
-        const bufferPlane1 = this.createBuffer(planeMatrices[1])
-        const bufferPlane2 = this.createBuffer(planeMatrices[2])
 
-        // Apply buffers to the cubes and planes
-        this.dirtCube?.thinInstanceSetBuffer("matrix", bufferBlock1, 16)
-        this.grassCube?.thinInstanceSetBuffer("matrix", bufferBlock2, 16)
-        this.dirtPlane?.thinInstanceSetBuffer("matrix", bufferPlane1, 16)
-        this.grassPlane?.thinInstanceSetBuffer("matrix", bufferPlane2, 16)
+        const terrainBlockBuffer = this.createPositionBuffer(tBlockMatrices1)
+        const terrainBlockUvBuffer = this.createUvBuffer(tBlockUvData1)
+        const terrainPlaneBuffer = this.createPositionBuffer(planeMatrices)
+        const terrainPlaneUvBuffer = this.createUvBuffer(planeUvData)
+
+        // Apply buffers for instances
+        this.terrainBlock1?.thinInstanceSetBuffer("matrix", terrainBlockBuffer, 16)
+        this.terrainBlock1?.thinInstanceSetBuffer("uvc", terrainBlockUvBuffer, 2)
+        this.terrainPlane?.thinInstanceSetBuffer("matrix", terrainPlaneBuffer, 16)
+        this.terrainPlane?.thinInstanceSetBuffer("uvc", terrainPlaneUvBuffer, 2)
+
+        // Render trees
+        TreeManager.setTreeInstanceBuffers(this.treeWoodBlock!, this.symetricBlock1!)
     },
 
-    createBuffer(matrices) {
+    createPositionBuffer(matrices) {
         const buffer = new Float32Array(matrices.length * 16)
         matrices.forEach((matrix, index) => {
             matrix.copyToArray(buffer, index * 16)
+        })
+
+        return buffer
+    },
+
+    createUvBuffer(vectors) {
+        const buffer = new Float32Array(vectors.length * 2)
+        vectors.forEach((vec, index) => {
+            buffer[index * 2] = vec.x
+            buffer[index * 2 + 1] = vec.y
         })
 
         return buffer
@@ -111,5 +141,15 @@ export const WorldRenderer = {
         this.worldParentNode!.position.y = -MyPlayer.playerData.modelYpos
         this.worldParentNode!.position.x = -MyPlayer.playerData.getOffset().x
         this.worldParentNode!.position.z = -MyPlayer.playerData.getOffset().z
+    }
+}
+
+export class Block {
+    pos: Vector3 = Vector3.Zero()
+    size: number
+
+    constructor(pos: Vector3, size: number) {
+        this.pos = pos
+        this.size = size
     }
 }

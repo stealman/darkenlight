@@ -77,14 +77,14 @@ export class CharacterModel {
 
     startWalkAnimation() {
         if (this.actualAnim !== this.walkAnim) {
-            this.transitionToAnimation(this.walkAnim, 0.1, true, 3)
+            this.transitionToAnimation(this.walkAnim, 0.15, true, 3)
             this.actualAnim = this.walkAnim
         }
     }
 
     startRunAnimation() {
         if (this.actualAnim !== this.runAnim) {
-            this.transitionToAnimation(this.runAnim, 0.1, true, 3)
+            this.transitionToAnimation(this.runAnim, 0.15, true, 3)
             this.actualAnim = this.runAnim
         }
     }
