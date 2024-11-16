@@ -2,12 +2,24 @@ import {
     Scene,
     StandardMaterial,
     Color3,
-    Texture
+    Texture, Vector2,
 } from '@babylonjs/core'
 import { CustomMaterial } from '@babylonjs/materials'
 
 export const Materials = {
     BASE_PATH: './assets/materials/',
+
+    terrainMaterial: null as CustomMaterial,
+    planeMaterial: null as StandardMaterial,
+    symetricBlockMaterial1: null as CustomMaterial,
+    waterMaterial: null as StandardMaterial,
+
+    initialize(scene: Scene) {
+        this.terrainMaterial = this.createTerrainMaterial1(scene)
+        this.planeMaterial = this.createPlaneMaterial(scene)
+        this.symetricBlockMaterial1 = this.createSymBlockMaterial1(scene)
+        this.waterMaterial = this.createWaterMaterial(scene)
+    },
 
     getBasicMaterial(scene: Scene, name: string, pathToDiffuse: string): StandardMaterial {
         const mat = new StandardMaterial(name, scene)
@@ -19,22 +31,23 @@ export const Materials = {
         return mat
     },
 
-    getGrassMaterial(scene: Scene): StandardMaterial {
-        return this.getBasicMaterial(scene, 'grassMaterial', this.BASE_PATH + 'grass.png')
+    createTerrainMaterial1(scene: Scene): CustomMaterial {
+        return this.getCustomMaterial(scene, 'terrain_materials_1.png', 1 / 4, 1 / 4, false)
     },
 
-    getDirtMaterial(scene: Scene): StandardMaterial {
-        return this.getBasicMaterial(scene, 'dirtMaterial', this.BASE_PATH + 'dirt.png')
+    createPlaneMaterial(scene: Scene): StandardMaterial {
+        return this.getCustomMaterial(scene, 'plane_materials.png', 1 / 8, 1 / 8, false)
     },
 
-    getTreeWoodMaterial(scene: Scene): StandardMaterial {
-        return this.getBasicMaterial(scene, 'treeWoodMaterial', this.BASE_PATH + 'tree_wood_1.png')
+    createSymBlockMaterial1(scene: Scene): CustomMaterial {
+        return this.getCustomMaterial(scene, 'symetric_materials_1.png', 1 / 8, 1 / 8, true)
     },
 
-    getTerrainMaterial1(scene: Scene): StandardMaterial {
-        const diffuseTexture = new Texture('./assets/materials/terrain_materials_1.png', scene)
-        diffuseTexture.uScale = 1 / 4
-        diffuseTexture.vScale = 1 / 4
+    getCustomMaterial(scene: Scene, textturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
+        const diffuseTexture = new Texture(this.BASE_PATH + textturePath, scene)
+        diffuseTexture.hasAlpha = hasAlpha
+        diffuseTexture.uScale = uScale
+        diffuseTexture.vScale = vScale
 
         const mat = new CustomMaterial("", scene)
         mat.diffuseTexture = diffuseTexture
@@ -44,43 +57,12 @@ export const Materials = {
         mat.AddAttribute("uvc")
         mat.Vertex_Definitions(`attribute vec2 uvc;`);
         mat.Vertex_Before_PositionUpdated(`uvUpdated += uvc;`)
+
+        mat.freeze()
         return mat
     },
 
-    getPlaneMaterial(scene: Scene): StandardMaterial {
-        const diffuseTexture = new Texture('./assets/materials/plane_materials.png', scene)
-        diffuseTexture.uScale = 1 / 8
-        diffuseTexture.vScale = 1 / 8
-
-        const mat = new CustomMaterial("", scene)
-        mat.diffuseTexture = diffuseTexture
-        mat.specularColor = new Color3(0, 0, 0)
-        mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
-
-        mat.AddAttribute("uvc")
-        mat.Vertex_Definitions(`attribute vec2 uvc;`);
-        mat.Vertex_Before_PositionUpdated(`uvUpdated += uvc;`)
-        return mat
-    },
-
-    getSymBlockMaterial1(scene: Scene): StandardMaterial {
-        const diffuseTexture = new Texture('./assets/materials/symetric_materials_1.png', scene)
-        diffuseTexture.hasAlpha = true
-        diffuseTexture.uScale = 1 / 8
-        diffuseTexture.vScale = 1 / 8
-
-        const mat = new CustomMaterial("", scene)
-        mat.diffuseTexture = diffuseTexture
-        mat.specularColor = new Color3(0, 0, 0)
-        mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
-
-        mat.AddAttribute("uvc")
-        mat.Vertex_Definitions(`attribute vec2 uvc;`);
-        mat.Vertex_Before_PositionUpdated(`uvUpdated += uvc;`)
-        return mat
-    },
-
-    getWaterMaterial(scene: Scene): StandardMaterial {
+    createWaterMaterial(scene: Scene): StandardMaterial {
         const mat = new StandardMaterial('waterMaterial', scene)
         mat.specularColor = new Color3(0, 0, 0)
 
@@ -95,9 +77,29 @@ export const Materials = {
     },
 }
 
-export const MaterialEnum1 = {
-    TREE_LEAF_1: new BABYLON.Vector2(0.5, 6.5),
-    TREE_LEAF_2: new BABYLON.Vector2(2.5, 6.5),
-    TREE_LEAF_3: new BABYLON.Vector2(4.5, 6.5),
-    TREE_LEAF_4: new BABYLON.Vector2(6.5, 6.5),
+class MaterialEnum {
+    index: number
+    uv: Vector2
+
+    constructor(index: number, uv: Vector2) {
+        this.index = index
+        this.uv = uv
+    }
 }
+
+export const MaterialEnum1 = {
+    TREE_LEAF_1: new MaterialEnum(1, new BABYLON.Vector2(0.5, 6.5)),
+    TREE_LEAF_2: new MaterialEnum(2, new BABYLON.Vector2(2.5, 6.5)),
+    TREE_LEAF_3: new MaterialEnum(3, new BABYLON.Vector2(4.5, 6.5)),
+    TREE_LEAF_4: new MaterialEnum(4, new BABYLON.Vector2(6.5, 6.5)),
+    WOOD_1: new MaterialEnum(5, new BABYLON.Vector2(0.5, 4.5)),
+
+    getMaterialByIndex(index: number): Vector2 {
+        for (const key in MaterialEnum1) {
+            if (MaterialEnum1[key].index === index) {
+                return MaterialEnum1[key].uv
+            }
+        }
+    }
+}
+

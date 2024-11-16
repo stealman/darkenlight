@@ -1,101 +1,94 @@
-import { Matrix, Mesh, Vector2, Vector3 } from '@babylonjs/core'
+import { Matrix, Scene, Vector2, Vector3 } from '@babylonjs/core'
 import { MyPlayer } from '@/babylon/character/myPlayer'
-import { Block, WorldRenderer } from '@/babylon/world/worldRenderer'
+import { Prefab, WorldRenderer } from '@/babylon/world/worldRenderer'
 import { MaterialEnum1 } from '@/babylon/materials'
+import { PrefabTree1 } from '@/babylon/world/prefabs/tree1'
+import { WorldData } from '@/babylon/world/worldData'
 
 export const TreeManager = {
+    prefabs: {
+        tree1: null as Prefab
+    },
     allTrees : [],
 
-    addTree() {
-        this.allTrees.push(new Tree1(new Vector3(352, 5.5, 572), MaterialEnum1.TREE_LEAF_1))
-        this.allTrees.push(new Tree1(new Vector3(345, 5.5, 578), MaterialEnum1.TREE_LEAF_3))
+    initialize(scene: Scene) {
+        this.prefabs.tree1 = PrefabTree1.getPrefab(scene)
+        this.addTrees()
     },
 
-    createTreeBlockMatrices() {
-        const woodMatrix: Matrix[] = []
-        const leafMatrix: Matrix[] = []
-        const leafUvData: Vector2[] = []
+    addTrees() {
+        // create 50 trees with leafs 1 - 4
+        //this.allTrees.push(new tree1.ts(new Vector3(345, 5.5, 580), MaterialEnum1.getMaterialByIndex(Math.floor(Math.random() * 4))))
+        //this.allTrees.push(new tree1.ts(new Vector3(350, 5.5, 570), MaterialEnum1.getMaterialByIndex(Math.floor(Math.random() * 4))))
+
+        for (let i = 0; i < 50; i++) {
+            const x = 330 + Math.random() * 35
+            const z = 550 + Math.random() * 35
+            const y = WorldData.getBlockMap()[Math.ceil(x)][Math.ceil(z)].height + 0.5
+            this.allTrees.push(new Tree1(new Vector3(x, y, z), Math.floor(Math.random() * 4) * Math.PI / 2, 0.6 + Math.random() * 0.4, MaterialEnum1.getMaterialByIndex(1 + Math.floor(Math.random() * 2))))
+        }
+    },
+
+    renderTrees() {
+        // Prefabs clear the matrices
+        for (const key in this.prefabs) {
+            this.prefabs[key].clearMatrices()
+        }
 
         for (let i = 0; i < this.allTrees.length; i++) {
+            this.allTrees[i].renderLeaves()
+        }
+
+        // Prefabs update thin instance buffers
+        for (const key in this.prefabs) {
+            this.prefabs[key].setThinInstanceBuffers()
+        }
+
+        // Render trunks to global symetric blocks
+        for (let i = 0; i < this.allTrees.length; i++) {
             const tree = this.allTrees[i]
-            tree.addBlocksToMatrices(woodMatrix, leafMatrix, leafUvData)
+            tree.renderTrunk()
         }
-
-        return {
-            woodMatrix: woodMatrix,
-            leafMatrix: leafMatrix,
-            leafUvData: leafUvData
-        }
-    },
-
-    setTreeInstanceBuffers(treeWoodBlock: Mesh, treeLeafBlock: Mesh) {
-        const treeMatrices = TreeManager.createTreeBlockMatrices()
-        const treeWoodBuffer = WorldRenderer.createPositionBuffer(treeMatrices.woodMatrix)
-        const treeLeafBuffer = WorldRenderer.createPositionBuffer(treeMatrices.leafMatrix)
-        const treeLeafUvBuffer = WorldRenderer.createUvBuffer(treeMatrices.leafUvData)
-
-        treeWoodBlock.thinInstanceSetBuffer("matrix", treeWoodBuffer, 16)
-        treeLeafBlock.thinInstanceSetBuffer("matrix", treeLeafBuffer, 16)
-        treeLeafBlock.thinInstanceSetBuffer("uvc", treeLeafUvBuffer, 2)
     }
 }
 
 class Tree1 {
     position: Vector3
+    rotation: number
+    scale: number
     leafMaterial: Vector2
+    woodMaterial: Vector2
+    leavesPrefab: Prefab
 
-    constructor(position: Vector3, leafMaterial: Vector2) {
+    constructor(position: Vector3, rotation: number, scale: number, leafMaterial: Vector2) {
         this.position = position
+        this.rotation = rotation
+        this.scale = scale
         this.leafMaterial = leafMaterial
+        this.woodMaterial = MaterialEnum1.WOOD_1.uv
+        this.leavesPrefab = TreeManager.prefabs.tree1
     }
 
-    addBlocksToMatrices(woodMatrix: Matrix[], leafMatrix: Matrix[], leafUvData: Vector2[]) {
+    renderLeaves() {
         const myPos = MyPlayer.playerData.getPositionRounded()
+        const matrix = Matrix.Translation( this.position.x - myPos.x, this.position.y + (2 * this.scale), this.position.z - myPos.z);
+        const rotationMatrix = Matrix.RotationY(this.rotation);
+        const scaleMatrix = Matrix.Scaling(this.scale, this.scale, this.scale);
 
-        // Blocks for wood of the tree
-        const woodBlocks: Block[] = []
-        for (let i = 0; i < 3; i+=0.5) {
-            woodBlocks.push(new Block(new Vector3(0, i, 0), 0.5))
+        this.leavesPrefab.matrices.push(scaleMatrix.multiply(rotationMatrix).multiply(matrix))
+        this.leavesPrefab.uvData.push(this.leafMaterial)
+    }
+
+    renderTrunk() {
+        const myPos = MyPlayer.playerData.getPositionRounded()
+        const scaleMatrix = Matrix.Scaling(this.scale / 2, this.scale / 2, this.scale / 2);
+
+        // Blocks for trunk
+        for (let i = 0; i <= 2.5 * this.scale; i += this.scale / 2) {
+            const positionMatrix = Matrix.Translation( this.position.x - myPos.x, this.position.y + i, this.position.z - myPos.z)
+
+            WorldRenderer.symetricBlock1.matrices.push(scaleMatrix.multiply(positionMatrix))
+            WorldRenderer.symetricBlock1.uvData.push(this.woodMaterial)
         }
-
-        woodBlocks.forEach((block) => {
-            woodMatrix.push(Matrix.Translation( this.position.x - myPos.x + block.pos.x, this.position.y + block.pos.y, this.position.z - myPos.z + block.pos.z))
-        })
-
-        // Blocks for leaves of the tree
-        const leafBlocks: Block[] = []
-        let y = 2.5
-        const size = 0.5
-        let layer = [ {x: -0.5, z: -1}, {x: 0, z: -1}, {x: 0.5, z: -1}, {x: -1, z: -0.5}, {x: 1, z: -0.5}, {x: -1, z: 0}, {x: 1, z: 0}, {x: -1, z: 0.5}, {x: 1, z: 0.5}, {x: -0.5, z: 1}, {x: 0, z: 1}, {x: 0.5, z: 1}, {x: 1, z: 1} ]
-        layer.forEach((pos) => {
-            leafBlocks.push(new Block(new Vector3(pos.x, y, pos.z), size))
-        })
-
-        y = 3
-        layer = [{ x: -0.5, z: -1 }, { x: 0, z: -1 }, { x: 0.5, z: -1 }, { x: -1, z: -0.5 }, { x: -0.5, z: -0.5 }, { x: 1, z: -0.5 }, { x: -1, z: 0 }, { x: 1, z: 0 },
-            { x: -1, z: 0.5 }, { x: 0.5, z: 0.5 }, { x: 1, z: 0.5 }, { x: -0.5, z: 1 }, { x: 0, z: 1 }, { x: 0.5, z: 1 }, { x: 1, z: 1 }];
-        layer.forEach((pos) => {
-            leafBlocks.push(new Block(new Vector3(pos.x, y, pos.z), size))
-        })
-
-        y = 3.5
-        leafBlocks.push(...[
-            { x: 0, z: -0.5 }, { x: 0.5, z: -0.5 },
-            { x: -0.5, z: 0 }, { x: 0.5, z: 0 },
-            { x: 0, z: 0.5 }, { x: -0.5, z: 0.5 }
-        ].map(coord => new Block(new Vector3(coord.x, y, coord.z), 0.5)));
-
-        y = 4
-        leafBlocks.push(...[
-            { x: 0.5, z: 0 }, { x: 0, z: -0.5 }, { x: 0, z: 0.5 }, { x: 0, z: 0 }
-        ].map(coord => new Block(new Vector3(coord.x, y, coord.z), 0.5)));
-
-        leafBlocks.forEach((block) => {
-            const posMatrix = Matrix.Translation(this.position.x - myPos.x + block.pos.x,this.position.y + block.pos.y,this.position.z - myPos.z + block.pos.z)
-            leafMatrix.push(Matrix.Scaling(0.5, 0.5, 0.5).multiply(posMatrix));
-            leafUvData.push(this.leafMaterial)
-        })
     }
 }
-
-

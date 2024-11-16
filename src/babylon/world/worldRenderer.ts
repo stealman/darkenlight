@@ -4,20 +4,20 @@ import {
     Mesh,
     Scene,
     ShadowGenerator,
-    TransformNode, Vector2, Vector3,
+    TransformNode, Vector2, Vector3
 } from '@babylonjs/core'
 import {MyPlayer} from "@/babylon/character/myPlayer";
 import {Settings} from "@/settings/settings";
 import { Builder } from '@/babylon/builder'
 import { Materials } from '@/babylon/materials'
 import { TreeManager } from '@/babylon/world/treeManager'
+import { BabylonUtils } from '@/babylon/utils'
 
 export const WorldRenderer = {
     terrainBlock1: null as Mesh | null,
     terrainPlane: null as Mesh | null,
 
-    treeWoodBlock: null as Mesh | null,
-    symetricBlock1: null as Mesh | null,
+    symetricBlock1: null as SymetricBlock,
 
     worldParentNode: null as TransformNode | null,
 
@@ -25,41 +25,38 @@ export const WorldRenderer = {
         this.worldParentNode = new TransformNode("worldNode", scene)
 
         this.terrainBlock1 = Builder.createBlockWithFaces(scene, this.worldParentNode)
-        this.terrainBlock1.material = Materials.getTerrainMaterial1(scene)
+        this.terrainBlock1.material = Materials.terrainMaterial
         this.terrainBlock1.isPickable = true
         this.terrainBlock1.thinInstanceEnablePicking = true
 
         this.terrainPlane = Builder.createHorizontalPlane(scene, this.worldParentNode, 1, 0)
-        this.terrainPlane.material = Materials.getPlaneMaterial(scene)
+        this.terrainPlane.material = Materials.planeMaterial
 
-        this.treeWoodBlock = Builder.createBlockWithFaces(scene, this.worldParentNode, 0.5)
-        this.treeWoodBlock.material = Materials.getTreeWoodMaterial(scene)
+        // Global blocks
+        this.symetricBlock1 = new SymetricBlock(Builder.createBlock(scene, this.worldParentNode), Materials.symetricBlockMaterial1)
 
-        this.symetricBlock1 = Builder.createBlock(scene, this.worldParentNode)
-        this.symetricBlock1.material = Materials.getSymBlockMaterial1(scene)
+        // Initialize managers
+        TreeManager.initialize(scene)
 
-        if (!Settings.touchEnabled) {
+        // Water planes
+        const plane = Builder.createHorizontalPlane(scene, this.worldParentNode,256, 0)
+        plane.material = Materials.waterMaterial
+        plane.position.y = 1
+        plane.isPickable = false
+
+        for (let i = 1.25; i <= 4.75; i += 0.25) {
+            plane.createInstance('plane' + i).position.y = i
+        }
+
+        if (Settings.shadows) {
             this.terrainBlock1.receiveShadows = true
             this.terrainPlane.receiveShadows = true
 
             shadow.addShadowCaster(this.terrainBlock1)
             shadow.addShadowCaster(this.terrainPlane)
-            shadow.addShadowCaster(this.treeWoodBlock)
-            shadow.addShadowCaster(this.symetricBlock1)
+            shadow.addShadowCaster(this.symetricBlock1.mesh)
+            shadow.addShadowCaster(TreeManager.prefabs.tree1.mesh)
         }
-
-        // Water planes
-        const plane = Builder.createHorizontalPlane(scene, this.worldParentNode,256, 0)
-        plane.material = Materials.getWaterMaterial(scene)
-        plane.position.y = 1
-        plane.isPickable = false
-
-        for (let i = 1.25; i <= 4.75; i += 0.25) {
-            const instance = plane.createInstance('plane' + i)
-            instance.position.y = i
-        }
-
-        TreeManager.addTree()
     },
 
     /**
@@ -103,53 +100,63 @@ export const WorldRenderer = {
             }
         }
 
-        const terrainBlockBuffer = this.createPositionBuffer(tBlockMatrices1)
-        const terrainBlockUvBuffer = this.createUvBuffer(tBlockUvData1)
-        const terrainPlaneBuffer = this.createPositionBuffer(planeMatrices)
-        const terrainPlaneUvBuffer = this.createUvBuffer(planeUvData)
-
         // Apply buffers for instances
-        this.terrainBlock1?.thinInstanceSetBuffer("matrix", terrainBlockBuffer, 16)
-        this.terrainBlock1?.thinInstanceSetBuffer("uvc", terrainBlockUvBuffer, 2)
-        this.terrainPlane?.thinInstanceSetBuffer("matrix", terrainPlaneBuffer, 16)
-        this.terrainPlane?.thinInstanceSetBuffer("uvc", terrainPlaneUvBuffer, 2)
+        this.terrainBlock1?.thinInstanceSetBuffer("matrix", BabylonUtils.createPositionBuffer(tBlockMatrices1), 16)
+        this.terrainBlock1?.thinInstanceSetBuffer("uvc", BabylonUtils.createUvBuffer(tBlockUvData1), 2)
+        this.terrainPlane?.thinInstanceSetBuffer("matrix", BabylonUtils.createPositionBuffer(planeMatrices), 16)
+        this.terrainPlane?.thinInstanceSetBuffer("uvc", BabylonUtils.createUvBuffer(planeUvData), 2)
+
+        this.symetricBlock1.clearMatrices()
 
         // Render trees
-        TreeManager.setTreeInstanceBuffers(this.treeWoodBlock!, this.symetricBlock1!)
-    },
+        TreeManager.renderTrees()
 
-    createPositionBuffer(matrices) {
-        const buffer = new Float32Array(matrices.length * 16)
-        matrices.forEach((matrix, index) => {
-            matrix.copyToArray(buffer, index * 16)
-        })
-
-        return buffer
-    },
-
-    createUvBuffer(vectors) {
-        const buffer = new Float32Array(vectors.length * 2)
-        vectors.forEach((vec, index) => {
-            buffer[index * 2] = vec.x
-            buffer[index * 2 + 1] = vec.y
-        })
-
-        return buffer
+        this.symetricBlock1.setThinInstanceBuffers()
     },
 
     updateWorldParentNode() {
-        this.worldParentNode!.position.y = -MyPlayer.playerData.modelYpos
-        this.worldParentNode!.position.x = -MyPlayer.playerData.getOffset().x
-        this.worldParentNode!.position.z = -MyPlayer.playerData.getOffset().z
+        this.worldParentNode!.position = new Vector3(-MyPlayer.playerData.getOffset().x, -MyPlayer.playerData.modelYpos, -MyPlayer.playerData.getOffset().z)
     }
 }
 
-export class Block {
-    pos: Vector3 = Vector3.Zero()
-    size: number
+export class Prefab {
+    mesh: Mesh
+    matrices: Matrix[] = []
+    uvData: Vector2[] = []
 
-    constructor(pos: Vector3, size: number) {
-        this.pos = pos
-        this.size = size
+    constructor(mesh: Mesh) {
+        this.mesh = mesh
+        this.mesh.doNotSyncBoundingInfo = true
+    }
+
+    clearMatrices() {
+        this.matrices = []
+        this.uvData = []
+    }
+
+    setThinInstanceBuffers() {
+        this.mesh.thinInstanceSetBuffer("matrix", BabylonUtils.createPositionBuffer(this.matrices), 16)
+        this.mesh.thinInstanceSetBuffer("uvc", BabylonUtils.createUvBuffer(this.uvData), 2)
+    }
+}
+
+class SymetricBlock {
+    mesh: Mesh
+    matrices: Matrix[] = []
+    uvData: Vector2[] = []
+
+    constructor(mesh, material) {
+        this.mesh = mesh
+        this.mesh.material = material
+    }
+
+    clearMatrices() {
+        this.matrices = []
+        this.uvData = []
+    }
+
+    setThinInstanceBuffers() {
+        this.mesh.thinInstanceSetBuffer("matrix", BabylonUtils.createPositionBuffer(this.matrices), 16)
+        this.mesh.thinInstanceSetBuffer("uvc", BabylonUtils.createUvBuffer(this.uvData), 2)
     }
 }

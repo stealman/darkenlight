@@ -28,7 +28,8 @@ export default {
 
     onMounted(async () => {
         if (canvas.value) {
-            Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 );
+            Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 )
+            // Settings.shadows = !Settings.touchEnabled
 
             await loadWorldData()
             Renderer.initialize(canvas.value)

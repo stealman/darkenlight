@@ -13,7 +13,7 @@ import { PlayerData } from '@/data/playerlData'
 export class CharacterModel {
     playerData: PlayerData
 
-    model: AbstractMesh | null
+    model: AbstractMesh
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
     idleAnim: AnimationGroup | undefined
@@ -22,7 +22,6 @@ export class CharacterModel {
 
     constructor(playerData: PlayerData, scene: Scene) {
         this.playerData = playerData
-        this.model = null
 
         SceneLoader.ImportMeshAsync(
             "",
@@ -148,7 +147,7 @@ export class CharacterModel {
         }
 
         if (Math.abs(angleDifference) < rotationSpeed) {
-            this.model.rotation.y = this.playerData.moveAngle;
+            this.model.rotation.y = this.playerData.moveAngle ? this.playerData.moveAngle : 0;
         } else {
             this.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
         }

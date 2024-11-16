@@ -7,7 +7,7 @@ export const MiniMap = {
     mapWidth: 0,
     mapHeight: 0,
 
-    initializeMiniMap() {
+    initialize() {
         const blockMap: MapBlock[][] = WorldData.blockMap
         this.mapWidth = blockMap[0].length
         this.mapHeight = blockMap.length

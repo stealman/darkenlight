@@ -16,6 +16,7 @@ import {Settings} from "@/settings/settings";
 import {WorldRenderer} from "@/babylon/world/worldRenderer";
 import { ScreenUtils } from '@/utils/screenUtils'
 import { MiniMap } from '@/utils/minimap'
+import { Materials } from '@/babylon/materials'
 
 /**
  * Main Renderer
@@ -35,7 +36,8 @@ export const Renderer = {
     light: {} as PointLight,
 
     initialize(canvasRef: UnwrapRef<HTMLCanvasElement>): { engine: Engine; scene: Scene } {
-        this.engine = new Engine(canvasRef, true)
+        // Antialiasing DISABLED, may be enabled on better devices
+        this.engine = new Engine(canvasRef, false)
         const engine = this.engine
 
         // Create the scene
@@ -43,13 +45,16 @@ export const Renderer = {
         const scene = this.scene
         scene.clearColor = new Color4(0.2, 0.4, 0.2)
         scene.imageProcessingConfiguration.exposure = 1.2
+        scene.skipPointerMovePicking = true
+        scene.autoClear = false
+        scene.autoClearDepthAndStencil = false
 
         this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), scene);
         this.light.intensity = 1.5;
         this.light.diffuse = new Color3(1, 1, 1);
         this.light.range = 5000;
 
-        if (!Settings.touchEnabled) {
+        if (Settings.shadows) {
             this.shadow = new ShadowGenerator(2048, this.light, false);
             this.shadow.bias = 0;
             this.shadow.setDarkness(0.25);
@@ -61,17 +66,18 @@ export const Renderer = {
 
         // Initialize game objects and managers
         Controller.initializeController(scene)
+        Materials.initialize(scene)
         WorldRenderer.initialize(scene, this.shadow)
-        MiniMap.initializeMiniMap()
         this.light.parent = WorldRenderer.worldParentNode
 
+        MiniMap.initialize()
         MyPlayer.initialize(scene)
 
         // Create the camera
         this.camera = new FreeCamera('camera1', new Vector3(-14, 14, -14), scene)
         this.camera.parent = MyPlayer.charModel!.model
         this.camera.setTarget(new Vector3(0, -4, 0))
-        //this.camera.attachControl(canvasRef, true)
+        // this.camera.attachControl(canvasRef, true)
 
         // Debug layer
         if (!Settings.touchEnabled) {
@@ -127,7 +133,7 @@ export const Renderer = {
             WorldRenderer.renderWorld()
             this.lastPos = pos
 
-            if (!Settings.touchEnabled) {
+            if (Settings.shadows) {
                 this.shadow.getShadowMap().refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE
             }
         }
