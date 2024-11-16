@@ -3,12 +3,14 @@ import {
     AnimationGroup,
     Color3,
     Scene,
-    SceneLoader,
+    SceneLoader, Sound,
     StandardMaterial,
     Texture,
     Vector3,
 } from '@babylonjs/core'
 import { PlayerData } from '@/data/playerlData'
+import { Settings } from '@/settings/settings'
+import { AudioManager } from '@/babylon/audio/audioManager'
 
 export class CharacterModel {
     playerData: PlayerData
@@ -20,8 +22,11 @@ export class CharacterModel {
     actualAnim: AnimationGroup | undefined
     animTransition: AnimTransition | null
 
+    footStepSound: Sound | null
+
     constructor(playerData: PlayerData, scene: Scene) {
         this.playerData = playerData
+        this.footStepSound = AudioManager.footStep.clone()
 
         SceneLoader.ImportMeshAsync(
             "",
@@ -32,7 +37,6 @@ export class CharacterModel {
             this.model = result.meshes[0]
             this.model.scaling = new Vector3(0.25, 0.25, 0.25)
             this.model.rotation = new Vector3(0, 0, 0)
-
 
             // Create a new material and load the texture
             const material = new StandardMaterial("steveMaterial", scene)
@@ -45,6 +49,9 @@ export class CharacterModel {
                 mesh.material = material
                 mesh.rotation = new Vector3(0, - Math.PI * 5 / 4, 0)
                 // Renderer.shadow.addShadowCaster(mesh)
+                if (Settings.shadows) {
+                    mesh.receiveShadows = true
+                }
             });
 
             if (result.animationGroups.length > 0) {
@@ -78,6 +85,11 @@ export class CharacterModel {
         if (this.actualAnim !== this.walkAnim) {
             this.transitionToAnimation(this.walkAnim, 0.15, true, 3)
             this.actualAnim = this.walkAnim
+
+            this.footStepSound?.setPlaybackRate(0.65)
+            if (!this.footStepSound?.isPlaying) {
+                this.footStepSound?.play()
+            }
         }
     }
 
@@ -85,6 +97,11 @@ export class CharacterModel {
         if (this.actualAnim !== this.runAnim) {
             this.transitionToAnimation(this.runAnim, 0.15, true, 3)
             this.actualAnim = this.runAnim
+
+            this.footStepSound?.setPlaybackRate(0.8)
+            if (!this.footStepSound?.isPlaying) {
+                this.footStepSound?.play()
+            }
         }
     }
 
@@ -92,6 +109,10 @@ export class CharacterModel {
         if (this.actualAnim !== this.idleAnim) {
             this.transitionToAnimation(this.idleAnim, 0.25, true, 0.5)
             this.actualAnim = this.idleAnim
+        }
+
+        if (this.footStepSound?.isPlaying) {
+            this.footStepSound?.stop()
         }
     }
 

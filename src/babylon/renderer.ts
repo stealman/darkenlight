@@ -4,7 +4,7 @@ import {
     Vector3,
     FreeCamera,
     PointLight,
-    ShadowGenerator, Color3, Color4, RenderTargetTexture,
+    ShadowGenerator, Color3, Color4, RenderTargetTexture
 } from '@babylonjs/core'
 import {UnwrapRef} from "vue"
 import '@babylonjs/inspector'
@@ -14,9 +14,10 @@ import {MyPlayer} from "@/babylon/character/myPlayer"
 import screenFull from 'screenfull'
 import {Settings} from "@/settings/settings";
 import {WorldRenderer} from "@/babylon/world/worldRenderer";
-import { ScreenUtils } from '@/utils/screenUtils'
 import { MiniMap } from '@/utils/minimap'
 import { Materials } from '@/babylon/materials'
+import { AudioManager } from '@/babylon/audio/audioManager'
+import { ViewportManager } from '@/utils/viewport'
 
 /**
  * Main Renderer
@@ -35,6 +36,8 @@ export const Renderer = {
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
 
+
+
     initialize(canvasRef: UnwrapRef<HTMLCanvasElement>): { engine: Engine; scene: Scene } {
         // Antialiasing DISABLED, may be enabled on better devices
         this.engine = new Engine(canvasRef, false)
@@ -50,9 +53,9 @@ export const Renderer = {
         scene.autoClearDepthAndStencil = false
 
         this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), scene);
-        this.light.intensity = 1.5;
+        this.light.intensity = 1.0;
         this.light.diffuse = new Color3(1, 1, 1);
-        this.light.range = 5000;
+        this.light.range = 500;
 
         if (Settings.shadows) {
             this.shadow = new ShadowGenerator(2048, this.light, false);
@@ -65,13 +68,15 @@ export const Renderer = {
         }
 
         // Initialize game objects and managers
+
+        AudioManager.initialize(scene)
+        MiniMap.initialize()
+        MyPlayer.initialize(scene)
+
         Controller.initializeController(scene)
         Materials.initialize(scene)
         WorldRenderer.initialize(scene, this.shadow)
         this.light.parent = WorldRenderer.worldParentNode
-
-        MiniMap.initialize()
-        MyPlayer.initialize(scene)
 
         // Create the camera
         this.camera = new FreeCamera('camera1', new Vector3(-14, 14, -14), scene)
@@ -80,14 +85,15 @@ export const Renderer = {
         // this.camera.attachControl(canvasRef, true)
 
         // Debug layer
-        if (!Settings.touchEnabled) {
+        if (Settings.debug) {
             scene.debugLayer.show({
                 embedMode: true
             })
+            /**
             const axes = new Debug.AxesViewer(scene, 5)
             axes.xAxis.position = new Vector3(5, 0, 5)
             axes.zAxis.position = new Vector3(5, 0, 5)
-            axes.yAxis.dispose()
+            axes.yAxis.dispose()*/
         }
 
         // Run the game loop
@@ -98,7 +104,8 @@ export const Renderer = {
 
         window.addEventListener('resize', () => {
             this.engine?.resize()
-            ScreenUtils.onResize()
+            ViewportManager.onResize()
+            this.lastPos = null
         })
 
         this.initialized = true
@@ -130,15 +137,21 @@ export const Renderer = {
 
         // If the player moved, render the world
         if (this.lastPos == null || pos.x !== this.lastPos.x || pos.z !== this.lastPos.z) {
-            WorldRenderer.renderWorld()
-            this.lastPos = pos
+            if (ViewportManager.viewPortInitialized) {
+                WorldRenderer.renderWorld()
+                this.lastPos = pos
 
-            if (Settings.shadows) {
-                this.shadow.getShadowMap().refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE
+                if (Settings.shadows) {
+                    this.shadow.getShadowMap().refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE
+                }
             }
         }
         WorldRenderer.updateWorldParentNode()
         scene.render()
+
+        if (!ViewportManager.viewPortInitialized) {
+            ViewportManager.calculateViewport(this.camera)
+        }
     },
 
     actualizeDebug() {

@@ -88,11 +88,11 @@ class MaterialEnum {
 }
 
 export const MaterialEnum1 = {
-    TREE_LEAF_1: new MaterialEnum(1, new BABYLON.Vector2(0.5, 6.5)),
-    TREE_LEAF_2: new MaterialEnum(2, new BABYLON.Vector2(2.5, 6.5)),
-    TREE_LEAF_3: new MaterialEnum(3, new BABYLON.Vector2(4.5, 6.5)),
-    TREE_LEAF_4: new MaterialEnum(4, new BABYLON.Vector2(6.5, 6.5)),
-    WOOD_1: new MaterialEnum(5, new BABYLON.Vector2(0.5, 4.5)),
+    TREE_LEAF_1: new MaterialEnum(1, new Vector2(0.5, 6.5)),
+    TREE_LEAF_2: new MaterialEnum(2, new Vector2(2.5, 6.5)),
+    TREE_LEAF_3: new MaterialEnum(3, new Vector2(4.5, 6.5)),
+    TREE_LEAF_4: new MaterialEnum(4, new Vector2(6.5, 6.5)),
+    WOOD_1: new MaterialEnum(5, new Vector2(0.5, 4.5)),
 
     getMaterialByIndex(index: number): Vector2 {
         for (const key in MaterialEnum1) {
@@ -103,3 +103,20 @@ export const MaterialEnum1 = {
     }
 }
 
+export const TerrainEnum1 = {
+    TERRAIN_DIRT: new MaterialEnum(1, new Vector2(2.5, 2.5)),
+    TERRAIN_GRASS: new MaterialEnum(2, new Vector2(0.5, 2.5)),
+
+    getTerrainByIndex(index: number): Vector2 {
+        return Object.values(TerrainEnum1).find(item => item.index === index)?.uv;
+    }
+}
+
+export const PlaneEnum1 = {
+    PLANE_DIRT: new MaterialEnum(1, new Vector2(2.5, 6.5)),
+    PLANE_GRASS: new MaterialEnum(2, new Vector2(0.5, 6.5)),
+
+    getPlaneByIndex(index: number): Vector2 {
+        return Object.values(PlaneEnum1).find(item => item.index === index)?.uv;
+    }
+}

@@ -65,7 +65,7 @@ export const Builder = {
         return cube;
     },
 
-    createHorizontalPlane(scene: Scene, parent: TransformNode, size: number, yPos: number): Mesh {
+    createHorizontalPlane(scene: Scene, parent: TransformNode | null, size: number, yPos: number): Mesh {
         const plane = MeshBuilder.CreatePlane('hPlane', {width: size, height: size}, scene)
         plane.rotation.x = Math.PI / 2
         plane.position.y = yPos

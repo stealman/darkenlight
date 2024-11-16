@@ -4,6 +4,7 @@ import { Prefab, WorldRenderer } from '@/babylon/world/worldRenderer'
 import { MaterialEnum1 } from '@/babylon/materials'
 import { PrefabTree1 } from '@/babylon/world/prefabs/tree1'
 import { WorldData } from '@/babylon/world/worldData'
+import { ViewportManager } from '@/utils/viewport'
 
 export const TreeManager = {
     prefabs: {
@@ -21,9 +22,9 @@ export const TreeManager = {
         //this.allTrees.push(new tree1.ts(new Vector3(345, 5.5, 580), MaterialEnum1.getMaterialByIndex(Math.floor(Math.random() * 4))))
         //this.allTrees.push(new tree1.ts(new Vector3(350, 5.5, 570), MaterialEnum1.getMaterialByIndex(Math.floor(Math.random() * 4))))
 
-        for (let i = 0; i < 50; i++) {
-            const x = 330 + Math.random() * 35
-            const z = 550 + Math.random() * 35
+        for (let i = 0; i < 500; i++) {
+            const x = 300 + Math.random() * 100
+            const z = 500 + Math.random() * 100
             const y = WorldData.getBlockMap()[Math.ceil(x)][Math.ceil(z)].height + 0.5
             this.allTrees.push(new Tree1(new Vector3(x, y, z), Math.floor(Math.random() * 4) * Math.PI / 2, 0.6 + Math.random() * 0.4, MaterialEnum1.getMaterialByIndex(1 + Math.floor(Math.random() * 2))))
         }
@@ -35,20 +36,29 @@ export const TreeManager = {
             this.prefabs[key].clearMatrices()
         }
 
-        for (let i = 0; i < this.allTrees.length; i++) {
-            this.allTrees[i].renderLeaves()
+        const visibleTrees = this.getVisibleTrees()
+        for (let i = 0; i < visibleTrees.length; i++) {
+            visibleTrees[i].renderLeaves()
+            visibleTrees[i].renderTrunk()
         }
 
         // Prefabs update thin instance buffers
         for (const key in this.prefabs) {
             this.prefabs[key].setThinInstanceBuffers()
         }
+    },
 
-        // Render trunks to global symetric blocks
+    getVisibleTrees() {
+        const myPos = MyPlayer.playerData.getPositionRounded()
+        const visibleTrees = []
+
         for (let i = 0; i < this.allTrees.length; i++) {
             const tree = this.allTrees[i]
-            tree.renderTrunk()
+            if (ViewportManager.isPointInVisibleMatrix(Math.floor(tree.position.x) - myPos.x, Math.floor(tree.position.z) - myPos.z, 2)) {
+                visibleTrees.push(tree)
+            }
         }
+        return visibleTrees
     }
 }
 
