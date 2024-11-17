@@ -24,7 +24,7 @@ import { ViewportManager } from '@/utils/viewport'
  */
 export const Renderer = {
     initialized: false,
-    scene: null as Scene | null,
+    scene: null as Scene,
     engine: null as Engine | null,
     camera: null as FreeCamera | null,
 
@@ -36,23 +36,12 @@ export const Renderer = {
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
 
-
-
-    initialize(canvasRef: UnwrapRef<HTMLCanvasElement>): { engine: Engine; scene: Scene } {
+    initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
         // Antialiasing DISABLED, may be enabled on better devices
         this.engine = new Engine(canvasRef, false)
-        const engine = this.engine
+        this.createScene(this.engine)
 
-        // Create the scene
-        this.scene = new Scene(this.engine)
-        const scene = this.scene
-        scene.clearColor = new Color4(0.2, 0.4, 0.2)
-        scene.imageProcessingConfiguration.exposure = 1.2
-        scene.skipPointerMovePicking = true
-        scene.autoClear = false
-        scene.autoClearDepthAndStencil = false
-
-        this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), scene);
+        this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), this.scene);
         this.light.intensity = 1.0;
         this.light.diffuse = new Color3(1, 1, 1);
         this.light.range = 500;
@@ -69,24 +58,33 @@ export const Renderer = {
 
         // Initialize game objects and managers
 
-        AudioManager.initialize(scene)
+        AudioManager.initialize(this.scene)
         MiniMap.initialize()
-        MyPlayer.initialize(scene)
+        MyPlayer.initialize(this.scene)
 
-        Controller.initializeController(scene)
-        Materials.initialize(scene)
-        WorldRenderer.initialize(scene, this.shadow)
+        Controller.initializeController(this.scene)
+        Materials.initialize(this.scene)
+        WorldRenderer.initialize(this.scene, this.shadow)
         this.light.parent = WorldRenderer.worldParentNode
 
         // Create the camera
-        this.camera = new FreeCamera('camera1', new Vector3(-14, 14, -14), scene)
+        const cameraPosition = new Vector3(-14, 14, -14)
+        let cameraViewY = -4
+        if (Settings.closeView) {
+            cameraPosition.x = -7
+            cameraPosition.y = 7
+            cameraPosition.z = -7
+            cameraViewY = 0
+        }
+
+        this.camera = new FreeCamera('camera1', cameraPosition, this.scene)
         this.camera.parent = MyPlayer.charModel!.model
-        this.camera.setTarget(new Vector3(0, -4, 0))
+        this.camera.setTarget(new Vector3(0, cameraViewY, 0))
         // this.camera.attachControl(canvasRef, true)
 
         // Debug layer
         if (Settings.debug) {
-            scene.debugLayer.show({
+            this.scene.debugLayer.show({
                 embedMode: true
             })
             /**
@@ -98,8 +96,8 @@ export const Renderer = {
 
         // Run the game loop
         this.engine.runRenderLoop(() => {
-            this.onFrame(scene)
-            scene.render()
+            this.onFrame(this.scene)
+            this.scene.render()
         })
 
         window.addEventListener('resize', () => {
@@ -109,7 +107,6 @@ export const Renderer = {
         })
 
         this.initialized = true
-        return { engine, scene }
     },
 
     /**
@@ -152,6 +149,15 @@ export const Renderer = {
         if (!ViewportManager.viewPortInitialized) {
             ViewportManager.calculateViewport(this.camera)
         }
+    },
+
+    createScene(engine: Engine) {
+        this.scene = new Scene(engine)
+        this.scene.clearColor = new Color4(0.2, 0.4, 0.2)
+        this.scene.imageProcessingConfiguration.exposure = 1.2
+        this.scene.skipPointerMovePicking = true
+        this.scene.autoClear = false
+        this.scene.autoClearDepthAndStencil = false
     },
 
     actualizeDebug() {

@@ -9,6 +9,8 @@ import { CustomMaterial } from '@babylonjs/materials'
 export const Materials = {
     BASE_PATH: './assets/materials/',
 
+    sceneEmissiveColor: new Color3(0.35, 0.35, 0.35),
+
     terrainMaterial: null as CustomMaterial,
     planeMaterial: null as StandardMaterial,
     symetricBlockMaterial1: null as CustomMaterial,
@@ -21,12 +23,12 @@ export const Materials = {
         this.waterMaterial = this.createWaterMaterial(scene)
     },
 
-    getBasicMaterial(scene: Scene, name: string, pathToDiffuse: string): StandardMaterial {
+    getBasicMaterial(scene: Scene, name: string, pathToDiffuse: string, invertY: boolean = true): StandardMaterial {
         const mat = new StandardMaterial(name, scene)
-        mat.specularColor = new Color3(0, 0, 0)
-        mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
+        mat.specularColor = Color3.Black()
+        mat.emissiveColor = this.sceneEmissiveColor
 
-        const diffuseTexture = new Texture(pathToDiffuse, scene)
+        const diffuseTexture = new Texture(pathToDiffuse, scene, {invertY: invertY})
         mat.diffuseTexture = diffuseTexture
         return mat
     },
@@ -51,8 +53,8 @@ export const Materials = {
 
         const mat = new CustomMaterial("", scene)
         mat.diffuseTexture = diffuseTexture
-        mat.specularColor = new Color3(0, 0, 0)
-        mat.emissiveColor = new Color3(0.35, 0.35, 0.35)
+        mat.specularColor = Color3.Black()
+        mat.emissiveColor = this.sceneEmissiveColor
 
         mat.AddAttribute("uvc")
         mat.Vertex_Definitions(`attribute vec2 uvc;`);
