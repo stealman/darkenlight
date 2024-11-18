@@ -1,8 +1,8 @@
 import {
     AbstractMesh,
-    AnimationGroup, Bone, Mesh,
+    AnimationGroup, Bone, Color3, Mesh,
     Scene,
-    SceneLoader, Skeleton, Sound,
+    SceneLoader, Skeleton, Sound, StandardMaterial,
     Vector3,
 } from '@babylonjs/core'
 import { PlayerData } from '@/data/playerlData'
@@ -10,6 +10,7 @@ import { Settings } from '@/settings/settings'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { Materials } from '@/babylon/materials'
 import { Builder } from '@/babylon/builder'
+import { WearableManager } from '@/babylon/item/wearableManager'
 
 export class CharacterModel {
     playerData: PlayerData
@@ -17,7 +18,7 @@ export class CharacterModel {
     model: AbstractMesh
     modelYAngleOffset: number = Math.PI * 1 / 4
     skeleton: Skeleton
-    rlegBone: Bone
+    headBone: Bone
 
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
@@ -97,12 +98,8 @@ export class CharacterModel {
             }
 
             this.skeleton = result.skeletons[0];
-            const bone = this.skeleton.bones.find(b => b.id === "Bone.010")
-            this.rlegBone = bone
-
-            const boot = Builder.createBlock(scene, null, 1)
-            boot.position = new Vector3(0, 0, 0)
-            boot.attachToBone(this.rlegBone, this.model)
+            this.headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
+            WearableManager.helmet.attachToBone(this.headBone, this.model)
 
         }).catch((error) => {
             console.error("Error loading model:", error)

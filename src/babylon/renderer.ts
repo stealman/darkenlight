@@ -18,6 +18,7 @@ import { MiniMap } from '@/utils/minimap'
 import { Materials } from '@/babylon/materials'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { ViewportManager } from '@/utils/viewport'
+import { WearableManager } from '@/babylon/item/wearableManager'
 
 /**
  * Main Renderer
@@ -36,9 +37,9 @@ export const Renderer = {
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
 
-    initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
+    async initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
         // Antialiasing DISABLED, may be enabled on better devices
-        this.engine = new Engine(canvasRef, false)
+        this.engine = new Engine(canvasRef, true)
         this.createScene(this.engine)
 
         this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), this.scene);
@@ -60,7 +61,10 @@ export const Renderer = {
 
         AudioManager.initialize(this.scene)
         MiniMap.initialize()
-        MyPlayer.initialize(this.scene)
+        await WearableManager.initialize(this.scene)
+        console.log("WearableManager initialized")
+        await MyPlayer.initialize(this.scene)
+        console.log("MyPlayer initialized")
 
         Controller.initializeController(this.scene)
         Materials.initialize(this.scene)
@@ -68,12 +72,12 @@ export const Renderer = {
         this.light.parent = WorldRenderer.worldParentNode
 
         // Create the camera
-        const cameraPosition = new Vector3(-14, 14, -14)
+        const cameraPosition = new Vector3(-12, 12, -12)
         let cameraViewY = -4
         if (Settings.closeView) {
-            cameraPosition.x = -7
-            cameraPosition.y = 7
-            cameraPosition.z = -7
+            cameraPosition.x = -6
+            cameraPosition.y = 6
+            cameraPosition.z = -6
             cameraViewY = 0
         }
 
