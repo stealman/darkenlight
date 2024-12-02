@@ -1,29 +1,34 @@
-import { AbstractMesh, Mesh, Scene, SceneLoader, Vector3 } from '@babylonjs/core'
+import { AbstractMesh, Scene, SceneLoader, SolidParticleSystem, Vector3 } from '@babylonjs/core'
 import { Materials } from '@/babylon/materials'
 
 export const WearableManager = {
-    helmet: null as AbstractMesh,
+    helmetSps: null as SolidParticleSystem,
+    helm1: null as AbstractMesh,
 
     async initialize(scene: Scene) {
+        const [helm1Result] = await Promise.all([
+            SceneLoader.ImportMeshAsync("", "/assets/models/equip/", "helm1.babylon", scene)
+        ]);
 
-        SceneLoader.ImportMeshAsync(
-            "",
-            "/assets/models/equip/",
-            "helm1.babylon",
-            scene
-        ).then((result) => {
-            this.helmet = result.meshes[0]
-            this.helmet.rotation = new Vector3(-Math.PI / 2, - Math.PI / 2, 0)
-            this.helmet.position = new Vector3(0, 1.2, 0)
-            this.helmet.scaling = new Vector3(1.8, 1.8, 1.8)
+        this.helm1 = helm1Result.meshes[0];
+        this.helm1.rotation = new Vector3(-Math.PI / 2, -Math.PI / 2, 0);
+        this.helm1.position = new Vector3(0, 1.2, 0);
+        this.helm1.scaling = new Vector3(1.8, 1.8, 1.8);
+        const helmMaterial = Materials.getBasicMaterial(scene, "helmMat", "/assets/models/equip/plate.png", true);
+        this.helm1.material = helmMaterial;
 
-            // Apply material
-            const material = Materials.getBasicMaterial(scene, "helmMat", "/assets/models/equip/plate.png", true)
+        // Register loaded meshes
+        this.registerLoadedMeshes(scene);
+    },
 
-            this.helmet.material = material
-            //helm.attachToBone(headBone, this.model)
-        }).catch((error) => {
-            console.error("Error loading model:", error)
+    registerLoadedMeshes(scene: Scene) {
+        this.helmetSps = new SolidParticleSystem("helmetSps", scene, {
+            //   enableMultiMaterial: true,
+            // computeParticleRotation: false,
+            //   computeParticleTexture: false
         });
+
+      //  this.helmetSps.addShape(merged, 20, true);
+     //   merged.dispose();
     }
 }

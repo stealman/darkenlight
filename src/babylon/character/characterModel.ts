@@ -99,7 +99,7 @@ export class CharacterModel {
 
             this.skeleton = result.skeletons[0];
             this.headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
-            WearableManager.helmet.attachToBone(this.headBone, this.model)
+            WearableManager.helm1.attachToBone(this.headBone, this.model)
 
         }).catch((error) => {
             console.error("Error loading model:", error)
@@ -111,7 +111,7 @@ export class CharacterModel {
             this.transitionToAnimation(this.walkAnim, 0.15, true, 3)
             this.actualAnim = this.walkAnim
 
-            this.footStepSound?.setPlaybackRate(0.65)
+            this.footStepSound?.setPlaybackRate(0.70)
             if (!this.footStepSound?.isPlaying) {
                 this.footStepSound?.play()
             }
@@ -123,7 +123,7 @@ export class CharacterModel {
             this.transitionToAnimation(this.runAnim, 0.15, true, 3)
             this.actualAnim = this.runAnim
 
-            this.footStepSound?.setPlaybackRate(0.8)
+            this.footStepSound?.setPlaybackRate(0.78)
             if (!this.footStepSound?.isPlaying) {
                 this.footStepSound?.play()
             }

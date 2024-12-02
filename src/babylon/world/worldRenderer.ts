@@ -22,6 +22,7 @@ export const WorldRenderer = {
 
         // Global blocks
         this.symetricBlock1 = new SymetricBlock(Builder.createBlock(scene, this.worldParentNode), Materials.symetricBlockMaterial1)
+        this.symetricBlock1.mesh.doNotSyncBoundingInfo = true
 
         // Initialize managers
         TerrainManager.initialize(scene)
@@ -48,6 +49,7 @@ export const WorldRenderer = {
         TreeManager.renderTrees()
 
         this.symetricBlock1.setThinInstanceBuffers()
+        this.symetricBlock1.mesh.thinInstanceRefreshBoundingInfo(false);
     },
 
     updateWorldParentNode() {
