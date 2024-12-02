@@ -17,7 +17,7 @@ import { Renderer } from './babylon/renderer'
 import {loadBMPData} from "./utils/bmpLoader";
 import {WorldData} from "@/babylon/world/worldData";
 import { Settings } from '@/settings/settings'
-import { ScreenUtils } from '@/utils/screenUtils'
+import { ViewportManager } from '@/utils/viewport'
 
 export default {
   name: 'App',
@@ -28,11 +28,17 @@ export default {
 
     onMounted(async () => {
         if (canvas.value) {
-            Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 );
+            Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 )
+            //Settings.shadows = !Settings.touchEnabled
+            Settings.debug = !Settings.touchEnabled
+            //Settings.closeView = true
+            //Settings.shadows = false
+
+            console.log(Settings.shadows)
 
             await loadWorldData()
             Renderer.initialize(canvas.value)
-            ScreenUtils.onResize()
+            ViewportManager.onResize()
         }
     });
 

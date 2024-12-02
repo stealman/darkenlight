@@ -14,7 +14,7 @@ export const MyPlayer = {
     movementType: 'WALK',
 
     initialize(scene: Scene) {
-        this.playerData = new PlayerData(100, 355, 575, 0)
+        this.playerData = new PlayerData(100, 355, 570, 0)
         this.charModel = new CharacterModel(this.playerData, scene)
         this.playerData.yPos = this.calculateYPos()
         this.playerData.modelYpos = this.playerData.yPos

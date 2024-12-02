@@ -1,7 +1,7 @@
 import { Scene, PointerEventTypes, Vector3, PointerInfo } from '@babylonjs/core'
 import {MyPlayer} from "@/babylon/character/myPlayer";
 import { Settings } from '@/settings/settings'
-import { ScreenUtils } from '@/utils/screenUtils'
+import { ViewportManager } from '@/utils/viewport'
 
 export const Controller = {
     leftPressedTime: 0,
@@ -65,7 +65,7 @@ export const Controller = {
     },
 
     pointerPressed(pointerInfo) {
-        const myCharPosition = ScreenUtils.getScreenPosition(MyPlayer.charModel!.model)
+        const myCharPosition = ViewportManager.getScreenPosition(MyPlayer.charModel!.model)
         const dx = pointerInfo.event.clientX - myCharPosition.x
         const dy = pointerInfo.event.clientY - myCharPosition.y
         const distance = Math.sqrt(dx * dx + dy * dy)

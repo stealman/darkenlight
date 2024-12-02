@@ -1,28 +1,36 @@
 import {
     AbstractMesh,
-    AnimationGroup,
-    Color3,
+    AnimationGroup, Bone, Color3, Mesh,
     Scene,
-    SceneLoader,
-    StandardMaterial,
-    Texture,
+    SceneLoader, Skeleton, Sound, StandardMaterial,
     Vector3,
 } from '@babylonjs/core'
 import { PlayerData } from '@/data/playerlData'
+import { Settings } from '@/settings/settings'
+import { AudioManager } from '@/babylon/audio/audioManager'
+import { Materials } from '@/babylon/materials'
+import { Builder } from '@/babylon/builder'
+import { WearableManager } from '@/babylon/item/wearableManager'
 
 export class CharacterModel {
     playerData: PlayerData
 
-    model: AbstractMesh | null
+    model: AbstractMesh
+    modelYAngleOffset: number = Math.PI * 1 / 4
+    skeleton: Skeleton
+    headBone: Bone
+
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
     idleAnim: AnimationGroup | undefined
     actualAnim: AnimationGroup | undefined
     animTransition: AnimTransition | null
 
+    footStepSound: Sound | null
+
     constructor(playerData: PlayerData, scene: Scene) {
         this.playerData = playerData
-        this.model = null
+        this.footStepSound = AudioManager.footStep.clone()
 
         SceneLoader.ImportMeshAsync(
             "",
@@ -34,42 +42,65 @@ export class CharacterModel {
             this.model.scaling = new Vector3(0.25, 0.25, 0.25)
             this.model.rotation = new Vector3(0, 0, 0)
 
-
-            // Create a new material and load the texture
-            const material = new StandardMaterial("steveMaterial", scene)
-            material.diffuseTexture = new Texture("/assets/models/steve/default.jpg", scene, {invertY: false})
-            material.specularColor = new Color3(0, 0, 0)
-            material.emissiveColor = new Color3(0.3, 0.3, 0.3)
-
-            // Apply the material to the model
+            // Apply material
+            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/default.jpg", false)
             this.model.getChildMeshes().forEach((mesh) => {
                 mesh.material = material
-                mesh.rotation = new Vector3(0, - Math.PI * 5 / 4, 0)
-                // Renderer.shadow.addShadowCaster(mesh)
+                if (Settings.shadows) {
+                    // Renderer.shadow.addShadowCaster(mesh)
+                    mesh.receiveShadows = true
+                }
             });
 
+            // Process animations
             if (result.animationGroups.length > 0) {
 
-                this.walkAnim = result.animationGroups.find(group => group.name === "Walk")
+
+                const animationGroup = result.animationGroups[0]; // Assuming there is one animation group
+                animationGroup.stop()
+                console.log(animationGroup)
+
+                // Define frame ranges for each animation
+                const animations = [
+                    { name: "Idle", startFrame: 0, endFrame: 75 },
+                    { name: "Walk", startFrame: 76, endFrame: 225 },
+                    { name: "Run", startFrame: 226, endFrame: 375 }
+                ];
+
+                const newAnimationGroups = animations.map(({ name, startFrame, endFrame }) => {
+                    const newGroup = animationGroup.clone(name);
+                    newGroup.from = startFrame;
+                    newGroup.to = endFrame;
+                    return newGroup;
+                });
+
+                console.log(newAnimationGroups)
+
+                this.walkAnim = newAnimationGroups[1]
                 if (this.walkAnim) {
-                    this.walkAnim['startFrame'] = 4
-                    this.walkAnim['endFrame'] = 146
+                    this.walkAnim['startFrame'] = 76
+                    this.walkAnim['endFrame'] = 220
                 }
 
-                this.runAnim = result.animationGroups.find(group => group.name === "Run")
+                this.runAnim = newAnimationGroups[2]
                 if (this.runAnim) {
-                    this.runAnim['startFrame'] = 4
-                    this.runAnim['endFrame'] = 146
+                    this.runAnim['startFrame'] = 226
+                    this.runAnim['endFrame'] = 370
                 }
 
-                this.idleAnim = result.animationGroups.find(group => group.name === "Idle")
+                this.idleAnim = newAnimationGroups[0]
                 if (this.idleAnim) {
                     this.idleAnim['startFrame'] = 0
-                    this.idleAnim['endFrame'] = 60
+                    this.idleAnim['endFrame'] = 75
                 }
 
                 this.idleAnim?.start(true, 0.5)
             }
+
+            this.skeleton = result.skeletons[0];
+            this.headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
+            WearableManager.helm1.attachToBone(this.headBone, this.model)
+
         }).catch((error) => {
             console.error("Error loading model:", error)
         });
@@ -77,15 +108,25 @@ export class CharacterModel {
 
     startWalkAnimation() {
         if (this.actualAnim !== this.walkAnim) {
-            this.transitionToAnimation(this.walkAnim, 0.1, true, 3)
+            this.transitionToAnimation(this.walkAnim, 0.15, true, 3)
             this.actualAnim = this.walkAnim
+
+            this.footStepSound?.setPlaybackRate(0.70)
+            if (!this.footStepSound?.isPlaying) {
+                this.footStepSound?.play()
+            }
         }
     }
 
     startRunAnimation() {
         if (this.actualAnim !== this.runAnim) {
-            this.transitionToAnimation(this.runAnim, 0.1, true, 3)
+            this.transitionToAnimation(this.runAnim, 0.15, true, 3)
             this.actualAnim = this.runAnim
+
+            this.footStepSound?.setPlaybackRate(0.78)
+            if (!this.footStepSound?.isPlaying) {
+                this.footStepSound?.play()
+            }
         }
     }
 
@@ -93,6 +134,10 @@ export class CharacterModel {
         if (this.actualAnim !== this.idleAnim) {
             this.transitionToAnimation(this.idleAnim, 0.25, true, 0.5)
             this.actualAnim = this.idleAnim
+        }
+
+        if (this.footStepSound?.isPlaying) {
+            this.footStepSound?.stop()
         }
     }
 
@@ -105,7 +150,6 @@ export class CharacterModel {
             if (this.animTransition.toAnimation !== targetAnim) {
                 this.animTransition.forceEnd()
             } else {
-                // If the target animation is the same, just return
                 return
             }
         }
@@ -138,8 +182,9 @@ export class CharacterModel {
      * Approximate model rotation to the move angle
      */
     resolveModelRotation(timeRate: number) {
-        // Approximate model rotation to the move angle
-        let angleDifference = this.playerData.moveAngle - this.model.rotation.y;
+        const myAngle = this.model.rotation.y - this.modelYAngleOffset
+
+        let angleDifference = this.playerData.moveAngle - myAngle;
         const rotationSpeed = this.playerData.rotationSpeed * timeRate;
         if (angleDifference > Math.PI) {
             angleDifference -= 2 * Math.PI;
@@ -148,7 +193,7 @@ export class CharacterModel {
         }
 
         if (Math.abs(angleDifference) < rotationSpeed) {
-            this.model.rotation.y = this.playerData.moveAngle;
+            this.model.rotation.y = this.playerData.moveAngle ? this.playerData.moveAngle + this.modelYAngleOffset : 0;
         } else {
             this.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
         }

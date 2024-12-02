@@ -4,7 +4,7 @@ import {
     Vector3,
     FreeCamera,
     PointLight,
-    ShadowGenerator, Color3, Color4, RenderTargetTexture,
+    ShadowGenerator, Color3, Color4, RenderTargetTexture
 } from '@babylonjs/core'
 import {UnwrapRef} from "vue"
 import '@babylonjs/inspector'
@@ -14,15 +14,18 @@ import {MyPlayer} from "@/babylon/character/myPlayer"
 import screenFull from 'screenfull'
 import {Settings} from "@/settings/settings";
 import {WorldRenderer} from "@/babylon/world/worldRenderer";
-import { ScreenUtils } from '@/utils/screenUtils'
 import { MiniMap } from '@/utils/minimap'
+import { Materials } from '@/babylon/materials'
+import { AudioManager } from '@/babylon/audio/audioManager'
+import { ViewportManager } from '@/utils/viewport'
+import { WearableManager } from '@/babylon/item/wearableManager'
 
 /**
  * Main Renderer
  */
 export const Renderer = {
     initialized: false,
-    scene: null as Scene | null,
+    scene: null as Scene,
     engine: null as Engine | null,
     camera: null as FreeCamera | null,
 
@@ -34,22 +37,17 @@ export const Renderer = {
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
 
-    initialize(canvasRef: UnwrapRef<HTMLCanvasElement>): { engine: Engine; scene: Scene } {
+    async initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
+        // Antialiasing DISABLED, may be enabled on better devices
         this.engine = new Engine(canvasRef, true)
-        const engine = this.engine
+        this.createScene(this.engine)
 
-        // Create the scene
-        this.scene = new Scene(this.engine)
-        const scene = this.scene
-        scene.clearColor = new Color4(0.2, 0.4, 0.2)
-        scene.imageProcessingConfiguration.exposure = 1.2
-
-        this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), scene);
-        this.light.intensity = 1.5;
+        this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), this.scene);
+        this.light.intensity = 1.0;
         this.light.diffuse = new Color3(1, 1, 1);
-        this.light.range = 5000;
+        this.light.range = 500;
 
-        if (!Settings.touchEnabled) {
+        if (Settings.shadows) {
             this.shadow = new ShadowGenerator(2048, this.light, false);
             this.shadow.bias = 0;
             this.shadow.setDarkness(0.25);
@@ -60,43 +58,59 @@ export const Renderer = {
         }
 
         // Initialize game objects and managers
-        Controller.initializeController(scene)
-        WorldRenderer.initialize(scene, this.shadow)
-        MiniMap.initializeMiniMap()
+
+        AudioManager.initialize(this.scene)
+        MiniMap.initialize()
+        await WearableManager.initialize(this.scene)
+        console.log("WearableManager initialized")
+        await MyPlayer.initialize(this.scene)
+        console.log("MyPlayer initialized")
+
+        Controller.initializeController(this.scene)
+        Materials.initialize(this.scene)
+        WorldRenderer.initialize(this.scene, this.shadow)
         this.light.parent = WorldRenderer.worldParentNode
 
-        MyPlayer.initialize(scene)
-
         // Create the camera
-        this.camera = new FreeCamera('camera1', new Vector3(-14, 14, -14), scene)
+        const cameraPosition = new Vector3(-12, 12, -12)
+        let cameraViewY = -4
+        if (Settings.closeView) {
+            cameraPosition.x = -6
+            cameraPosition.y = 6
+            cameraPosition.z = -6
+            cameraViewY = 0
+        }
+
+        this.camera = new FreeCamera('camera1', cameraPosition, this.scene)
         this.camera.parent = MyPlayer.charModel!.model
-        this.camera.setTarget(new Vector3(0, -4, 0))
-        //this.camera.attachControl(canvasRef, true)
+        this.camera.setTarget(new Vector3(0, cameraViewY, 0))
+        // this.camera.attachControl(canvasRef, true)
 
         // Debug layer
-        if (!Settings.touchEnabled) {
-            scene.debugLayer.show({
+        if (Settings.debug) {
+            this.scene.debugLayer.show({
                 embedMode: true
             })
+            /**
             const axes = new Debug.AxesViewer(scene, 5)
             axes.xAxis.position = new Vector3(5, 0, 5)
             axes.zAxis.position = new Vector3(5, 0, 5)
-            axes.yAxis.dispose()
+            axes.yAxis.dispose()*/
         }
 
         // Run the game loop
         this.engine.runRenderLoop(() => {
-            this.onFrame(scene)
-            scene.render()
+            this.onFrame(this.scene)
+            this.scene.render()
         })
 
         window.addEventListener('resize', () => {
             this.engine?.resize()
-            ScreenUtils.onResize()
+            ViewportManager.onResize()
+            this.lastPos = null
         })
 
         this.initialized = true
-        return { engine, scene }
     },
 
     /**
@@ -124,15 +138,30 @@ export const Renderer = {
 
         // If the player moved, render the world
         if (this.lastPos == null || pos.x !== this.lastPos.x || pos.z !== this.lastPos.z) {
-            WorldRenderer.renderWorld()
-            this.lastPos = pos
+            if (ViewportManager.viewPortInitialized) {
+                WorldRenderer.renderWorld()
+                this.lastPos = pos
 
-            if (!Settings.touchEnabled) {
-                this.shadow.getShadowMap().refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE
+                if (Settings.shadows) {
+                    this.shadow.getShadowMap().refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE
+                }
             }
         }
         WorldRenderer.updateWorldParentNode()
         scene.render()
+
+        if (!ViewportManager.viewPortInitialized) {
+            ViewportManager.calculateViewport(this.camera)
+        }
+    },
+
+    createScene(engine: Engine) {
+        this.scene = new Scene(engine)
+        this.scene.clearColor = new Color4(0.2, 0.4, 0.2)
+        this.scene.imageProcessingConfiguration.exposure = 1.2
+        this.scene.skipPointerMovePicking = true
+        this.scene.autoClear = false
+        this.scene.autoClearDepthAndStencil = false
     },
 
     actualizeDebug() {
