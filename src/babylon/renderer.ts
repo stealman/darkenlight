@@ -73,7 +73,7 @@ export const Renderer = {
 
         // Create the camera
         const cameraPosition = new Vector3(-12, 12, -12)
-        let cameraViewY = -4
+        let cameraViewY = -2
         if (Settings.closeView) {
             cameraPosition.x = -6
             cameraPosition.y = 6
@@ -129,6 +129,7 @@ export const Renderer = {
         this.actualizeDebug()
 
         MyPlayer.onFrame(timeRate)
+        WearableManager.onFrame()
 
         if (this.frame % 150 === 0) {
             MiniMap.updateMiniMap()

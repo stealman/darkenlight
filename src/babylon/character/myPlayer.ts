@@ -40,8 +40,6 @@ export const MyPlayer = {
             this.playerData.zPos -= Math.sin(this.playerData.moveAngle + Math.PI / 4) * speed * timeRate
             this.playerData.yPos = this.calculateYPos()
 
-
-
             if (this.movementType === 'RUN') {
                 this.charModel?.startRunAnimation()
             } else {

@@ -31,7 +31,7 @@ export default {
             Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 )
             //Settings.shadows = !Settings.touchEnabled
             Settings.debug = !Settings.touchEnabled
-            //Settings.closeView = true
+            // Settings.closeView = true
             //Settings.shadows = false
 
             console.log(Settings.shadows)

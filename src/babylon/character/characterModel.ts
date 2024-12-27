@@ -1,15 +1,14 @@
 import {
     AbstractMesh,
-    AnimationGroup, Bone, Color3, Mesh,
+    AnimationGroup,
     Scene,
-    SceneLoader, Skeleton, Sound, StandardMaterial,
+    SceneLoader, Skeleton, Sound, TransformNode,
     Vector3,
 } from '@babylonjs/core'
 import { PlayerData } from '@/data/playerlData'
 import { Settings } from '@/settings/settings'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { Materials } from '@/babylon/materials'
-import { Builder } from '@/babylon/builder'
 import { WearableManager } from '@/babylon/item/wearableManager'
 
 export class CharacterModel {
@@ -18,7 +17,10 @@ export class CharacterModel {
     model: AbstractMesh
     modelYAngleOffset: number = Math.PI * 1 / 4
     skeleton: Skeleton
-    headBone: Bone
+    headNode: TransformNode
+    torsoNode: TransformNode
+    lhandNode: TransformNode
+    rhandNode: TransformNode
 
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
@@ -43,7 +45,7 @@ export class CharacterModel {
             this.model.rotation = new Vector3(0, 0, 0)
 
             // Apply material
-            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/default.jpg", false)
+            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/default1.jpg", false)
             this.model.getChildMeshes().forEach((mesh) => {
                 mesh.material = material
                 if (Settings.shadows) {
@@ -54,8 +56,6 @@ export class CharacterModel {
 
             // Process animations
             if (result.animationGroups.length > 0) {
-
-
                 const animationGroup = result.animationGroups[0]; // Assuming there is one animation group
                 animationGroup.stop()
                 console.log(animationGroup)
@@ -73,8 +73,6 @@ export class CharacterModel {
                     newGroup.to = endFrame;
                     return newGroup;
                 });
-
-                console.log(newAnimationGroups)
 
                 this.walkAnim = newAnimationGroups[1]
                 if (this.walkAnim) {
@@ -98,12 +96,46 @@ export class CharacterModel {
             }
 
             this.skeleton = result.skeletons[0];
-            this.headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
-            WearableManager.helm1.attachToBone(this.headBone, this.model)
+
+            // Torso node
+            const torsoBone = this.skeleton.bones.find(b => b.id === "Bone.001")
+            this.torsoNode = new TransformNode("torsoNode")
+            this.torsoNode.attachToBone(torsoBone, this.model);
+
+            // Head node
+            const headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
+            this.headNode = new TransformNode("headNode")
+            this.headNode.attachToBone(headBone, this.model);
+
+            // Lhand 003
+            const lhandBone = this.skeleton.bones.find(b => b.id === "Bone.003")
+            this.lhandNode = new TransformNode("lhandNode")
+            this.lhandNode.attachToBone(lhandBone, this.model);
+
+            // Rhand 010
+            const rhandBone = this.skeleton.bones.find(b => b.id === "Bone.010")
+            this.rhandNode = new TransformNode("rhandNode")
+            this.rhandNode.attachToBone(rhandBone, this.model);
+
+            //this.assignArmor(1);
+            //this.assignHelmet(1);
+            this.assignRightPauldron(1);
 
         }).catch((error) => {
             console.error("Error loading model:", error)
         });
+    }
+
+    assignHelmet(type) {
+        WearableManager.assignHelmet(this.headNode, type, new Vector3(1, 1, 1), new Vector3(0, 0.42, 0));
+    }
+
+    assignArmor(type) {
+        WearableManager.assignArmor(this.torsoNode, type, new Vector3(1, 1, 1), new Vector3(-0.01, 0.65, -0.01));
+    }
+
+    assignRightPauldron(type) {
+        WearableManager.assignRightPauldron(this.rhandNode, type, new Vector3(1, 1, 1), new Vector3(0, 0, 0));
     }
 
     startWalkAnimation() {

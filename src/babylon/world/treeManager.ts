@@ -18,10 +18,6 @@ export const TreeManager = {
     },
 
     addTrees() {
-        // create 50 trees with leafs 1 - 4
-        //this.allTrees.push(new tree1.ts(new Vector3(345, 5.5, 580), MaterialEnum1.getMaterialByIndex(Math.floor(Math.random() * 4))))
-        //this.allTrees.push(new tree1.ts(new Vector3(350, 5.5, 570), MaterialEnum1.getMaterialByIndex(Math.floor(Math.random() * 4))))
-
         for (let i = 0; i < 250; i++) {
             const x = 300 + Math.random() * 100
             const z = 500 + Math.random() * 100
