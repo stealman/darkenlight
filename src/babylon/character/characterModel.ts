@@ -21,6 +21,8 @@ export class CharacterModel {
     torsoNode: TransformNode
     lhandNode: TransformNode
     rhandNode: TransformNode
+    llegNode: TransformNode
+    rlegNode: TransformNode
 
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
@@ -58,7 +60,6 @@ export class CharacterModel {
             if (result.animationGroups.length > 0) {
                 const animationGroup = result.animationGroups[0]; // Assuming there is one animation group
                 animationGroup.stop()
-                console.log(animationGroup)
 
                 // Define frame ranges for each animation
                 const animations = [
@@ -100,26 +101,39 @@ export class CharacterModel {
             // Torso node
             const torsoBone = this.skeleton.bones.find(b => b.id === "Bone.001")
             this.torsoNode = new TransformNode("torsoNode")
-            this.torsoNode.attachToBone(torsoBone, this.model);
+            this.torsoNode.attachToBone(torsoBone, this.model)
 
             // Head node
             const headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
             this.headNode = new TransformNode("headNode")
-            this.headNode.attachToBone(headBone, this.model);
+            this.headNode.attachToBone(headBone, this.model)
 
-            // Lhand 003
-            const lhandBone = this.skeleton.bones.find(b => b.id === "Bone.003")
+            // Lhand 010
+            const lhandBone = this.skeleton.bones.find(b => b.id === "Bone.010")
             this.lhandNode = new TransformNode("lhandNode")
-            this.lhandNode.attachToBone(lhandBone, this.model);
+            this.lhandNode.attachToBone(lhandBone, this.model)
 
-            // Rhand 010
-            const rhandBone = this.skeleton.bones.find(b => b.id === "Bone.010")
+            // Rhand 003
+            const rhandBone = this.skeleton.bones.find(b => b.id === "Bone.003")
             this.rhandNode = new TransformNode("rhandNode")
-            this.rhandNode.attachToBone(rhandBone, this.model);
+            this.rhandNode.attachToBone(rhandBone, this.model)
 
-            //this.assignArmor(1);
-            //this.assignHelmet(1);
-            this.assignRightPauldron(1);
+            // Lleg 008
+            const llegBone = this.skeleton.bones.find(b => b.id === "Bone.008")
+            this.llegNode = new TransformNode("llegNode")
+            this.llegNode.attachToBone(llegBone, this.model)
+
+            // Rleg 006
+            const rlegBone = this.skeleton.bones.find(b => b.id === "Bone.006")
+            this.rlegNode = new TransformNode("rlegNode")
+            this.rlegNode.attachToBone(rlegBone, this.model)
+
+            this.assignArmor(1)
+            this.assignHelmet(1)
+            this.assignRightPauldron(1)
+            this.assignLeftPauldron(2)
+            this.assignRightLeg(1)
+            this.assignLeftLeg(1)
 
         }).catch((error) => {
             console.error("Error loading model:", error)
@@ -127,15 +141,27 @@ export class CharacterModel {
     }
 
     assignHelmet(type) {
-        WearableManager.assignHelmet(this.headNode, type, new Vector3(1, 1, 1), new Vector3(0, 0.42, 0));
+        WearableManager.assignHelmet(this.headNode, type);
     }
 
     assignArmor(type) {
-        WearableManager.assignArmor(this.torsoNode, type, new Vector3(1, 1, 1), new Vector3(-0.01, 0.65, -0.01));
+        WearableManager.assignArmor(this.torsoNode, type);
+    }
+
+    assignLeftPauldron(type) {
+        WearableManager.assignPauldron(this.rhandNode, type);
     }
 
     assignRightPauldron(type) {
-        WearableManager.assignRightPauldron(this.rhandNode, type, new Vector3(1, 1, 1), new Vector3(0, 0, 0));
+        WearableManager.assignPauldron(this.lhandNode, type);
+    }
+
+    assignLeftLeg(type) {
+        WearableManager.assignLeg(this.llegNode, type);
+    }
+
+    assignRightLeg(type) {
+        WearableManager.assignLeg(this.rlegNode, type);
     }
 
     startWalkAnimation() {
