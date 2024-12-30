@@ -5,7 +5,7 @@ import {
     SceneLoader, Skeleton, Sound, TransformNode,
     Vector3,
 } from '@babylonjs/core'
-import { PlayerData } from '@/data/playerlData'
+import { PlayerData } from '@/babylon/character/playerlData'
 import { Settings } from '@/settings/settings'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { Materials } from '@/babylon/materials'
@@ -17,16 +17,27 @@ export class CharacterModel {
     model: AbstractMesh
     modelYAngleOffset: number = Math.PI * 1 / 4
     skeleton: Skeleton
-    headNode: TransformNode
-    torsoNode: TransformNode
-    lhandNode: TransformNode
-    rhandNode: TransformNode
-    llegNode: TransformNode
-    rlegNode: TransformNode
+    headNode: TransformNode = new TransformNode("headNode")
+    torsoNode: TransformNode = new TransformNode("torsoNode")
+    larmNode: TransformNode = new TransformNode("larmNode")
+    rarmNode: TransformNode = new TransformNode("rarmNode")
+    llegNode: TransformNode = new TransformNode("llegNode")
+    rlegNode: TransformNode = new TransformNode("rlegNode")
+
+    lhandNode: TransformNode = new TransformNode("lhandNode")
+    rhandNode: TransformNode = new TransformNode("rhandNode")
 
     walkAnim: AnimationGroup | undefined
     runAnim: AnimationGroup | undefined
     idleAnim: AnimationGroup | undefined
+    combatIdleAnim: AnimationGroup | undefined
+    slashAnim: AnimationGroup | undefined
+    slashAnim2: AnimationGroup | undefined
+    jabAnim: AnimationGroup | undefined
+    leftSlashAnim: AnimationGroup | undefined
+    rightSlashAnim: AnimationGroup | undefined
+    highJabAnim: AnimationGroup | undefined
+
     actualAnim: AnimationGroup | undefined
     animTransition: AnimTransition | null
 
@@ -39,7 +50,7 @@ export class CharacterModel {
         SceneLoader.ImportMeshAsync(
             "",
             "/assets/models/steve/",
-            "steve.gltf",
+            "steve2.gltf",
             scene
         ).then((result) => {
             this.model = result.meshes[0]
@@ -47,7 +58,7 @@ export class CharacterModel {
             this.model.rotation = new Vector3(0, 0, 0)
 
             // Apply material
-            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/default1.jpg", false)
+            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/default1.jpg", false, false)
             this.model.getChildMeshes().forEach((mesh) => {
                 mesh.material = material
                 if (Settings.shadows) {
@@ -65,7 +76,16 @@ export class CharacterModel {
                 const animations = [
                     { name: "Idle", startFrame: 0, endFrame: 75 },
                     { name: "Walk", startFrame: 76, endFrame: 225 },
-                    { name: "Run", startFrame: 226, endFrame: 375 }
+                    { name: "Run", startFrame: 226, endFrame: 375 },
+                    { name: "CombatIdle", startFrame: 400, endFrame: 475 },
+
+                    // Attack animations are cut off last 15 frames to join smoothly with the next animation
+                    { name: "Slash", startFrame: 500, endFrame: 560},
+                    { name: "Jab", startFrame: 600, endFrame: 660},
+                    { name: "LeftSlash", startFrame: 700, endFrame: 760},
+                    { name: "RightSlash", startFrame: 800, endFrame: 860},
+                    { name: "HighJab", startFrame: 900, endFrame: 960},
+                    { name: "Slash2", startFrame: 1000, endFrame: 1060},
                 ];
 
                 const newAnimationGroups = animations.map(({ name, startFrame, endFrame }) => {
@@ -75,93 +95,70 @@ export class CharacterModel {
                     return newGroup;
                 });
 
-                this.walkAnim = newAnimationGroups[1]
-                if (this.walkAnim) {
-                    this.walkAnim['startFrame'] = 76
-                    this.walkAnim['endFrame'] = 220
-                }
-
-                this.runAnim = newAnimationGroups[2]
-                if (this.runAnim) {
-                    this.runAnim['startFrame'] = 226
-                    this.runAnim['endFrame'] = 370
-                }
-
                 this.idleAnim = newAnimationGroups[0]
-                if (this.idleAnim) {
-                    this.idleAnim['startFrame'] = 0
-                    this.idleAnim['endFrame'] = 75
-                }
+                this.walkAnim = newAnimationGroups[1]
+                this.runAnim = newAnimationGroups[2]
+                this.combatIdleAnim = newAnimationGroups[3]
+                this.slashAnim = newAnimationGroups[4]
+                this.jabAnim = newAnimationGroups[5]
+                this.leftSlashAnim = newAnimationGroups[6]
+                this.rightSlashAnim = newAnimationGroups[7]
+                this.highJabAnim = newAnimationGroups[8]
+                this.slashAnim2 = newAnimationGroups[9]
 
                 this.idleAnim?.start(true, 0.5)
             }
 
             this.skeleton = result.skeletons[0];
 
-            // Torso node
-            const torsoBone = this.skeleton.bones.find(b => b.id === "Bone.001")
-            this.torsoNode = new TransformNode("torsoNode")
-            this.torsoNode.attachToBone(torsoBone, this.model)
+            this.torsoNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.001"), this.model) // Torso node 001
+            this.headNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.002"), this.model) // Head node 002
+            this.larmNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.010"), this.model) // Larm 010
+            this.rarmNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.003"), this.model) // Rarm 003
+            this.llegNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.008"), this.model) // Lleg 008
+            this.rlegNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.006"), this.model) // Rleg 006
+            this.lhandNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.012"), this.model) // Lhand 012
+            this.rhandNode.attachToBone(this.skeleton.bones.find(b => b.id === "Bone.009"), this.model) // Rhand 009
 
-            // Head node
-            const headBone = this.skeleton.bones.find(b => b.id === "Bone.002")
-            this.headNode = new TransformNode("headNode")
-            this.headNode.attachToBone(headBone, this.model)
-
-            // Lhand 010
-            const lhandBone = this.skeleton.bones.find(b => b.id === "Bone.010")
-            this.lhandNode = new TransformNode("lhandNode")
-            this.lhandNode.attachToBone(lhandBone, this.model)
-
-            // Rhand 003
-            const rhandBone = this.skeleton.bones.find(b => b.id === "Bone.003")
-            this.rhandNode = new TransformNode("rhandNode")
-            this.rhandNode.attachToBone(rhandBone, this.model)
-
-            // Lleg 008
-            const llegBone = this.skeleton.bones.find(b => b.id === "Bone.008")
-            this.llegNode = new TransformNode("llegNode")
-            this.llegNode.attachToBone(llegBone, this.model)
-
-            // Rleg 006
-            const rlegBone = this.skeleton.bones.find(b => b.id === "Bone.006")
-            this.rlegNode = new TransformNode("rlegNode")
-            this.rlegNode.attachToBone(rlegBone, this.model)
-
-            this.assignArmor(1)
-            this.assignHelmet(1)
-            this.assignRightPauldron(1)
-            this.assignLeftPauldron(2)
-            this.assignRightLeg(1)
-            this.assignLeftLeg(1)
+            this.assignArmor(1, 1)
+            this.assignHelmet(1, 1)
+            this.assignRightPauldron(1, 1)
+            this.assignLeftPauldron(2, 1)
+            this.assignRightLeg(1, 1)
+            this.assignLeftLeg(1, 1)
+            this.assignSword(1, 0)
 
         }).catch((error) => {
             console.error("Error loading model:", error)
         });
     }
 
-    assignHelmet(type) {
-        WearableManager.assignHelmet(this.headNode, type);
+    assignHelmet(type, materialId) {
+        WearableManager.assignHelmet(this.headNode, type, materialId);
     }
 
-    assignArmor(type) {
-        WearableManager.assignArmor(this.torsoNode, type);
+    assignArmor(type, materialId) {
+        WearableManager.assignArmor(this.torsoNode, type, materialId);
     }
 
-    assignLeftPauldron(type) {
-        WearableManager.assignPauldron(this.rhandNode, type);
+    assignLeftPauldron(type, materialId) {
+        WearableManager.assignPauldron(this.rarmNode, type, materialId);
     }
 
-    assignRightPauldron(type) {
-        WearableManager.assignPauldron(this.lhandNode, type);
+    assignRightPauldron(type, materialId) {
+        WearableManager.assignPauldron(this.larmNode, type, materialId);
     }
 
-    assignLeftLeg(type) {
-        WearableManager.assignLeg(this.llegNode, type);
+    assignLeftLeg(type, materialId) {
+        WearableManager.assignLeg(this.llegNode, type, materialId);
     }
 
-    assignRightLeg(type) {
-        WearableManager.assignLeg(this.rlegNode, type);
+    assignRightLeg(type, materialId) {
+        WearableManager.assignLeg(this.rlegNode, type, materialId);
+    }
+
+    assignSword(type, materialId) {
+        WearableManager.assignSword(this.rhandNode, type, materialId);
     }
 
     startWalkAnimation() {
@@ -188,10 +185,26 @@ export class CharacterModel {
         }
     }
 
+    doAttackAnimation() {
+        // Random select attack animation
+        const desiredAnimation = [this.slashAnim, this.jabAnim, this.leftSlashAnim, this.rightSlashAnim, this.highJabAnim, this.slashAnim2][Math.floor(Math.random() * 6)]
+        if (this.actualAnim !== desiredAnimation) {
+            this.transitionToAnimation(desiredAnimation, 0.15, false, 1.25)
+            this.actualAnim = desiredAnimation
+
+            if (this.footStepSound?.isPlaying) {
+                this.footStepSound?.stop()
+            }
+        }
+    }
+
     stopAnimation() {
-        if (this.actualAnim !== this.idleAnim) {
-            this.transitionToAnimation(this.idleAnim, 0.25, true, 0.5)
-            this.actualAnim = this.idleAnim
+        const desiredAnimation = this.combatIdleAnim
+        const animSpeed = 0.75
+
+        if (this.actualAnim !== desiredAnimation) {
+            this.transitionToAnimation(desiredAnimation, 0.25, true, animSpeed)
+            this.actualAnim = desiredAnimation
         }
 
         if (this.footStepSound?.isPlaying) {
@@ -259,7 +272,7 @@ export class CharacterModel {
     }
 }
 
-class AnimTransition {
+export class AnimTransition {
     duration: number
     fromAnimation: AnimationGroup
     toAnimation: AnimationGroup

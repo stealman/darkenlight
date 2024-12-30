@@ -75,7 +75,7 @@ export const TerrainManager = {
             }
         }
 
-        console.log('Visible blocks ' + count)
+        // console.log('Visible blocks ' + count)
 
         // Apply buffers for instances
         this.terrainBlock1.thinInstanceSetBuffer("matrix", BabylonUtils.createPositionBuffer(terrainMatrices1), 16)

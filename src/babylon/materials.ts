@@ -23,12 +23,13 @@ export const Materials = {
         this.waterMaterial = this.createWaterMaterial(scene)
     },
 
-    getBasicMaterial(scene: Scene, name: string, pathToDiffuse: string, invertY: boolean = true): StandardMaterial {
+    getBasicMaterial(scene: Scene, name: string, pathToDiffuse: string, hasAlpha: boolean = false, invertY: boolean = true): StandardMaterial {
         const mat = new StandardMaterial(name, scene)
         mat.specularColor = Color3.Black()
         mat.emissiveColor = this.sceneEmissiveColor
 
         const diffuseTexture = new Texture(pathToDiffuse, scene, {invertY: invertY})
+        diffuseTexture.hasAlpha = hasAlpha
         mat.diffuseTexture = diffuseTexture
         return mat
     },

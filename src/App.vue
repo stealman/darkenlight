@@ -37,7 +37,7 @@ export default {
             console.log(Settings.shadows)
 
             await loadWorldData()
-            Renderer.initialize(canvas.value)
+            await Renderer.initialize(canvas.value)
             ViewportManager.onResize()
         }
     });

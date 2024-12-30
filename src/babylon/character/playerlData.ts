@@ -15,6 +15,10 @@ export class PlayerData {
     rotationSpeed: number = 15
     yMoveSpeed: number = 15
 
+    lastAttackTime: number = 0
+    attackCooldown: number = 1000
+    attackAnimationTime: number = 800 // 1000 is base attack time
+
     constructor(hp = 0, xPos = 0, zPos = 0, yPos = 0) {
         this.hp = hp
         this.xPos = xPos

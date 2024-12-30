@@ -1,10 +1,11 @@
-import {PlayerData} from "@/data/playerlData";
+import {PlayerData} from "@/babylon/character/playerlData";
 import {
     Scene,
     Vector3,
 } from '@babylonjs/core'
 import { WorldData } from '@/babylon/world/worldData'
 import { CharacterModel } from '@/babylon/character/characterModel'
+import { Utils } from '@/utils/utils'
 
 export const MyPlayer = {
     playerData: new PlayerData(0, 0, 0, 0),
@@ -12,6 +13,8 @@ export const MyPlayer = {
     charModel: null as CharacterModel | null,
 
     movementType: 'WALK',
+    autoAttackActive: false,
+    autoAttackEnd: 0,
 
     initialize(scene: Scene) {
         this.playerData = new PlayerData(100, 355, 570, 0)
@@ -20,11 +23,20 @@ export const MyPlayer = {
         this.playerData.modelYpos = this.playerData.yPos
     },
 
-    onFrame(timeRate: number) {
+    onFrame(timeRate: number, actualTime: number) {
+        if (this.autoAttackActive && actualTime - this.playerData.lastAttackTime > this.playerData.attackCooldown && this.autoAttackEnd <= actualTime) {
+            this.playerData.lastAttackTime = actualTime
+            this.autoAttackEnd = actualTime + this.playerData.attackAnimationTime
+            this.charModel?.doAttackAnimation()
+        }
+
+        if (this.autoAttackEnd > actualTime) {
+            this.charModel?.onFrame(timeRate)
+            return
+        }
+
         if (this.playerData.targetBlock != null) {
             const targetBlock = this.playerData.targetBlock
-
-            // Check distance from target block (maximal from both axis)
             const dx = Math.abs(targetBlock.x - this.playerData.xPos)
             const dz = Math.abs(targetBlock.z - this.playerData.zPos)
 
@@ -54,7 +66,7 @@ export const MyPlayer = {
 
     calculateYPos() {
         const map = WorldData.getBlockMap()
-        const coveredBlocks = this.getCoveredBlocks(this.playerData.xPos, this.playerData.zPos, 0.4)
+        const coveredBlocks = Utils.getCoveredBlocks(this.playerData.xPos, this.playerData.zPos, 0.4)
 
         // From map get all blocks that are covered by the player and find the highest one
         let highest = 0
@@ -65,23 +77,6 @@ export const MyPlayer = {
         })
 
         return highest
-    },
-
-    getCoveredBlocks(xPos: number, zPos: number, characterWidth, blockSize = 1) {
-        const threshold = blockSize - (characterWidth / 2);
-
-        const coveredBlocks = [];
-        for (let x = Math.floor(xPos) -2; x <= Math.ceil(xPos) + 2; x++) {
-            for (let z = Math.floor(zPos) -2; z <= Math.ceil(zPos) + 2; z++) {
-
-                if (Math.abs(x - xPos) < threshold && Math.abs(z - zPos) < threshold) {
-                    coveredBlocks.push( {x: x, z: z} )
-                }
-
-            }
-        }
-
-        return coveredBlocks;
     },
 
     setMoveTypeAngle(movementType: string, angle: number | null) {

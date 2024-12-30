@@ -15,18 +15,20 @@ export const WearableManager = {
     pauldronManager: null as WearableItemManager,
     legManager: null as WearableItemManager,
 
+    swordManager: null as WearableItemManager,
+
     async initialize(scene: Scene) {
         const helmModels = [
             new WearableItemModel("male-plate-helm1", 1, "helm1.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)),
             new WearableItemModel("male-plate-helm2", 2, "helm2.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)) ]
 
-        this.helmetManager = new WearableItemManager("helm", scene, helmModels)
+        this.helmetManager = new WearableItemManager("helm", scene, helmModels, "/assets/models/equip/plate.png")
         await this.helmetManager.initialize(scene)
 
         const armorModels = [
             new WearableItemModel("malte-plate-armor", 1, "armor-plate.babylon", new Vector3(0.42, 0.42, 0.42), new Vector3(-0.01, 0.65, 0.03))]
 
-        this.armorManager = new WearableItemManager("armor", scene, armorModels)
+        this.armorManager = new WearableItemManager("armor", scene, armorModels, "/assets/models/equip/plate.png")
         await this.armorManager.initialize(scene)
 
         const pauldronModels = [
@@ -34,31 +36,40 @@ export const WearableManager = {
             new WearableItemModel("male-plate-pauldron-right", 2, "pauldron-plate.babylon", new Vector3(0.48, 0.48, 0.52), new Vector3(0, -0.12, -0.05), new Vector3(0, Math.PI / 2, 0))
         ]
 
-        this.pauldronManager = new WearableItemManager("pauldron", scene, pauldronModels)
+        this.pauldronManager = new WearableItemManager("pauldron", scene, pauldronModels, "/assets/models/equip/plate.png")
         await this.pauldronManager.initialize(scene)
 
         const legModels = [
             new WearableItemModel("plate-legs", 1, "leg-plate.babylon", new Vector3(0.26, 0.26, 0.23), new Vector3(-0.01, -0.1, 0.01))
         ]
-        this.legManager = new WearableItemManager("legs", scene, legModels)
+        this.legManager = new WearableItemManager("legs", scene, legModels, "/assets/models/equip/plate.png")
         await this.legManager.initialize(scene)
 
+        const swordModels = [
+            new WearableItemModel("sword", 1, "weapons/sword1.babylon", new Vector3(5, 5, 5), new Vector3(0.01, 0.1, 0), new Vector3(0, Math.PI / 2, Math.PI / 2))
+        ]
+        this.swordManager = new WearableItemManager("sword", scene, swordModels, "/assets/models/equip/weapons/swords.png")
+        await this.swordManager.initialize(scene)
     },
 
-    assignHelmet(node, modelId, scale: Vector3 = new Vector3(1, 1, 1)) {
-        this.helmetManager.assignItem(node, modelId, scale)
+    assignHelmet(node, modelId, materialId, scale: Vector3 = new Vector3(1, 1, 1)) {
+        this.helmetManager.assignItem(node, modelId, PlateArmorMaterials[materialId], scale)
     },
 
-    assignArmor(node, modelId, scale: Vector3 = new Vector3(1, 1, 1)) {
-        this.armorManager.assignItem(node, modelId, scale)
+    assignArmor(node, modelId, materialId, scale: Vector3 = new Vector3(1, 1, 1)) {
+        this.armorManager.assignItem(node, modelId, PlateArmorMaterials[materialId], scale)
     },
 
-    assignPauldron(node, modelId, scale: Vector3 = new Vector3(1, 1, 1)) {
-        this.pauldronManager.assignItem(node, modelId, scale)
+    assignPauldron(node, modelId, materialId, scale: Vector3 = new Vector3(1, 1, 1)) {
+        this.pauldronManager.assignItem(node, modelId, PlateArmorMaterials[materialId], scale)
     },
 
-    assignLeg(node, modelId, scale: Vector3 = new Vector3(1, 1, 1)) {
-        this.legManager.assignItem(node, modelId, scale)
+    assignLeg(node, modelId, materialId, scale: Vector3 = new Vector3(1, 1, 1)) {
+        this.legManager.assignItem(node, modelId, PlateArmorMaterials[materialId], scale)
+    },
+
+    assignSword(node, modelId, materialId, scale: Vector3 = new Vector3(1, 1, 1)) {
+        this.swordManager.assignItem(node, modelId, SwordMaterials.longsword_iron, scale)
     },
 
     onFrame() {
@@ -66,6 +77,7 @@ export const WearableManager = {
         this.armorManager.onFrame()
         this.pauldronManager.onFrame()
         this.legManager.onFrame()
+        this.swordManager.onFrame()
     }
 }
 
@@ -74,11 +86,13 @@ class WearableItemManager {
     sps: SolidParticleSystem
     spsMesh: Mesh
     models: WearableItemModel[] = []
+    texturePath: string
 
-    constructor(namePrefix: string, scene: Scene, models: WearableItemModel[]) {
+    constructor(namePrefix: string, scene: Scene, models: WearableItemModel[], texturePath: string) {
         this.namePrefix = namePrefix
         this.sps = new SolidParticleSystem(this.namePrefix + "Sps", scene, { expandable: true })
         this.models = models
+        this.texturePath = texturePath
     }
 
     async initialize(scene: Scene) {
@@ -113,7 +127,7 @@ class WearableItemManager {
         // Build mesh object
         this.spsMesh = this.sps.buildMesh()
         this.spsMesh.receiveShadows = true
-        this.spsMesh.material = Materials.getBasicMaterial(scene, "helmMat", "/assets/models/equip/plate.png", true)
+        this.spsMesh.material = Materials.getBasicMaterial(scene, "helmMat", this.texturePath , false, true)
         // this.spsMesh.material.specularColor = Color3.White()
 
         // Override function that will update particle position on setParticles() call
@@ -136,7 +150,7 @@ class WearableItemManager {
         }
     }
 
-    assignItem(node, itemModelId, scale) {
+    assignItem(node, itemModelId, uvs, scale) {
         let itemFound = false;
 
         for (let i = 0; i < this.sps.particles.length; i++) {
@@ -144,8 +158,7 @@ class WearableItemManager {
             if (p.itemModelId == itemModelId && p.obj == null) {
                 p.obj = node
                 p.isVisible = true
-                // p.uvs = new Vector4(0.5, 0, 1, 1)
-                p.uvs = new Vector4(0.1, 0.1, 0.4, 0.9)
+                p.uvs = uvs
 
                 p.scaling.copyFrom(scale)
                 itemFound = true
@@ -170,7 +183,7 @@ class WearableItemManager {
                     break
                 }
             }
-            this.assignItem(node, itemModelId, scale)
+            this.assignItem(node, itemModelId, uvs, scale)
         }
 
         this.sps.setParticles();
@@ -204,4 +217,14 @@ class WearableItemModel {
         this.mesh.scaling = this.baseScale
         this.mesh.setEnabled(false)
     }
+}
+
+const PlateArmorMaterials = [
+    new Vector4(0.1, 0, 0.4, 1), // Iron
+    new Vector4(0.5, 0, 1, 1), // Mythril
+]
+
+const SwordMaterials = {
+    longsword_iron : new Vector4(0, 5/6, 0.5, 1),
+    longsword_mythril : new Vector4(0.5, 5/6, 1, 1),
 }

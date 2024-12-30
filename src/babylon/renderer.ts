@@ -19,6 +19,8 @@ import { Materials } from '@/babylon/materials'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { ViewportManager } from '@/utils/viewport'
 import { WearableManager } from '@/babylon/item/wearableManager'
+import { MonsterManager } from '@/babylon/monsters/monsterManager'
+import { Monster } from '@/babylon/monsters/monster'
 
 /**
  * Main Renderer
@@ -36,6 +38,8 @@ export const Renderer = {
 
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
+
+    testMob: null as Monster,
 
     async initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
         // Antialiasing DISABLED, may be enabled on better devices
@@ -63,13 +67,19 @@ export const Renderer = {
         MiniMap.initialize()
         await WearableManager.initialize(this.scene)
         console.log("WearableManager initialized")
+
         await MyPlayer.initialize(this.scene)
         console.log("MyPlayer initialized")
+
+        await MonsterManager.initialize(this.scene)
+        console.log("MonsterManager initialized")
 
         Controller.initializeController(this.scene)
         Materials.initialize(this.scene)
         WorldRenderer.initialize(this.scene, this.shadow)
         this.light.parent = WorldRenderer.worldParentNode
+
+        this.testMob = MonsterManager.addMonster(1, 1, { x: 360, z: 565 })
 
         // Create the camera
         const cameraPosition = new Vector3(-12, 12, -12)
@@ -128,8 +138,13 @@ export const Renderer = {
         this.fps = parseInt(this.engine?.getFps().toFixed());
         this.actualizeDebug()
 
-        MyPlayer.onFrame(timeRate)
-        WearableManager.onFrame()
+        if (this.frame > 1) {
+            MyPlayer.onFrame(timeRate, actualTime)
+            MonsterManager.onFrame(timeRate, actualTime)
+            WearableManager.onFrame()
+
+            this.testMob.setTargetPoint(new Vector3(MyPlayer.playerData.xPos + 1, 0, MyPlayer.playerData.zPos + 1))
+        }
 
         if (this.frame % 150 === 0) {
             MiniMap.updateMiniMap()
