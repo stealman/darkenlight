@@ -20,7 +20,8 @@ export const WearableManager = {
     async initialize(scene: Scene) {
         const helmModels = [
             new WearableItemModel("male-plate-helm1", 1, "helm1.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)),
-            new WearableItemModel("male-plate-helm2", 2, "helm2.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)) ]
+            new WearableItemModel("male-plate-helm2", 2, "helm2.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)),
+            new WearableItemModel("skeleton-helm", 3, "helm1.babylon", new Vector3(0.42, 0.42, 0.42), new Vector3(0, 0.44, 0), new Vector3(0, Math.PI / 2, 0))]
 
         this.helmetManager = new WearableItemManager("helm", scene, helmModels, "/assets/models/equip/plate.png")
         await this.helmetManager.initialize(scene)
@@ -87,12 +88,14 @@ class WearableItemManager {
     spsMesh: Mesh
     models: WearableItemModel[] = []
     texturePath: string
+    scene: Scene
 
     constructor(namePrefix: string, scene: Scene, models: WearableItemModel[], texturePath: string) {
         this.namePrefix = namePrefix
         this.sps = new SolidParticleSystem(this.namePrefix + "Sps", scene, { expandable: true })
         this.models = models
         this.texturePath = texturePath
+        this.scene = scene
     }
 
     async initialize(scene: Scene) {
@@ -108,12 +111,7 @@ class WearableItemManager {
      */
     registerLoadedMeshes(scene: Scene) {
         for (const model of this.models) {
-            model.mesh.rotation = model.baseRotation
-            model.mesh.position = model.basePosition
-
-            const merged = Mesh.MergeMeshes([model.mesh], false)
-            this.sps.addShape(merged!, 2)
-            merged!.dispose()
+            this.addModelMeshToSps(model)
 
             this.sps.particles.forEach((p) => {
                 if (p.isVisible) {
@@ -127,7 +125,7 @@ class WearableItemManager {
         // Build mesh object
         this.spsMesh = this.sps.buildMesh()
         this.spsMesh.receiveShadows = true
-        this.spsMesh.material = Materials.getBasicMaterial(scene, "helmMat", this.texturePath , false, true)
+        this.spsMesh.material = Materials.getBasicMaterial(scene, this.namePrefix + "Mat", this.texturePath , false, true)
         // this.spsMesh.material.specularColor = Color3.White()
 
         // Override function that will update particle position on setParticles() call
@@ -171,7 +169,7 @@ class WearableItemManager {
             for (let i = 0; i < this.models.length; i++) {
                 const model = this.models[i];
                 if (model.itemModelId === itemModelId) {
-                    this.sps.addShape(model.mesh, 3)
+                    this.addModelMeshToSps(model)
 
                     this.sps.particles.forEach((p) => {
                         if (p.itemModelId === undefined) {
@@ -183,10 +181,20 @@ class WearableItemManager {
                     break
                 }
             }
+            this.spsMesh = this.sps.buildMesh()
             this.assignItem(node, itemModelId, uvs, scale)
         }
 
         this.sps.setParticles();
+    }
+
+    addModelMeshToSps(model: WearableItemModel) {
+        model.mesh.rotation = model.baseRotation
+        model.mesh.position = model.basePosition
+
+        const merged = Mesh.MergeMeshes([model.mesh], false)
+        this.sps.addShape(merged!, 1)
+        merged!.dispose()
     }
 
     onFrame() {

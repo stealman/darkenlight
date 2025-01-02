@@ -1,7 +1,6 @@
 import { MonsterModel } from '@/babylon/monsters/monsterModel'
 import { MonsterType } from '@/babylon/monsters/monsterCodebook'
 import { WorldData } from '@/babylon/world/worldData'
-import { MyPlayer } from '@/babylon/character/myPlayer'
 import { Utils } from '@/utils/utils'
 import { Vector3 } from '@babylonjs/core'
 
@@ -9,21 +8,16 @@ export class Monster {
     id: number
     mobType: MonsterType
     model: MonsterModel
-
     targetPoint: Vector3 | null = null
 
     hp: number
     runSpeed: number = 1.5
-    yMoveSpeed: number = 15
     rotationSpeed: number = 15
     xPos: number
     zPos: number
     yPos: number
-    modelYpos: number = 0
-    modelRotation: number = 0
-    moveAngle: number | null = null
 
-    modelYAngleOffset: number = Math.PI * 1 / 4
+    moveAngle: number | null = null
 
     constructor(id: number, mobType: MonsterType, model: MonsterModel, xPos: number, zPos: number) {
         this.id = id
@@ -33,18 +27,11 @@ export class Monster {
         this.xPos = xPos
         this.zPos = zPos
         this.yPos = 0
-        this.modelYpos = 0
     }
 
     onFrame(timeRate: number, actualTime: number) {
         this.resolveMovement(timeRate)
-
-        // Set model position base ond xPos and zPos and myPlayer.playerData x and z pos
-        this.model.model.position.x = this.xPos - MyPlayer.playerData.xPos
-        this.model.model.position.z = this.zPos - MyPlayer.playerData.zPos
-        this.yPos = this.calculateYPos()
-        this.resolveModelYpos(timeRate)
-        this.resolveModelRotation(timeRate)
+        this.model.onFrame(timeRate)
     }
 
     resolveMovement(timeRate: number) {
@@ -66,6 +53,8 @@ export class Monster {
             this.xPos += (Math.cos(this.moveAngle + Math.PI / 4) * stepSize)
             this.zPos -= (Math.sin(this.moveAngle + Math.PI / 4) * stepSize)
         }
+
+        this.yPos = this.calculateYPos()
     }
 
     setTargetPoint(point: Vector3) {
@@ -87,37 +76,5 @@ export class Monster {
         })
 
         return highest
-    }
-
-    /**
-     * Approximate model Y position to the player Y position
-     */
-    resolveModelYpos(timeRate: number) {
-        this.model.model.position.y = (this.yPos - MyPlayer.playerData.modelYpos)
-        this.modelYpos = this.model.model.position.y
-    }
-
-    /**
-     * Approximate model rotation to the move angle
-     */
-    resolveModelRotation(timeRate: number) {
-        if (!this.moveAngle) return
-
-        const myAngle = this.model.model.rotation.y - this.modelYAngleOffset
-
-        let angleDifference = this.moveAngle - myAngle;
-        const rotationSpeed = this.rotationSpeed * timeRate;
-        if (angleDifference > Math.PI) {
-            angleDifference -= 2 * Math.PI;
-        } else if (angleDifference < -Math.PI) {
-            angleDifference += 2 * Math.PI;
-        }
-
-        if (Math.abs(angleDifference) < rotationSpeed) {
-            this.model.model.rotation.y = this.moveAngle + this.modelYAngleOffset;
-        } else {
-            this.model.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
-        }
-        this.modelRotation = this.model.model.rotation.y;
     }
 }

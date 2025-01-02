@@ -1,4 +1,4 @@
-import { Mesh, Scene, SceneLoader, Vector3 } from '@babylonjs/core'
+import { Mesh, Scene, SceneLoader, Skeleton, Vector3 } from '@babylonjs/core'
 import { Materials } from '@/babylon/materials'
 import { Settings } from '@/settings/settings'
 import { MonsterType } from '@/babylon/monsters/monsterCodebook'
@@ -36,10 +36,12 @@ export const MonsterLoader = {
 
         model.setEnabled(false)
         mobType.mesh = model;
+        mobType.skeleton = result.skeletons[0]
+        console.log(mobType.skeleton)
         this.monsterClones[mobType.name] = []
     },
 
-    getMonsterClone (mobType: MonsterType): Mesh {
+    getMonsterClone (mobType: MonsterType): MonsterTemplate {
         const clones = this.monsterClones[mobType.name]
 
         let freeClone = null
@@ -47,28 +49,10 @@ export const MonsterLoader = {
             freeClone = clones.pop()
         } else {
             const template = MonsterTemplates[mobType.name]
-            freeClone = template.mesh!.clone(mobType.name + clones.length)
+            freeClone = template.clone(mobType.name + clones.length)
         }
 
-        freeClone.setEnabled(true)
         return freeClone
-    }
-}
-
-export const MonsterTemplates = {
-    Skeleton: {
-        name: "Skeleton",
-        meshName: "skeleton.gltf",
-        textureName: "skeleton.png",
-        scale: new Vector3(0.05, 0.05, 0.05),
-        mesh: null
-    },
-    Zombie: {
-        name: "Zombie",
-        meshName: "zombie.babylon",
-        textureName: "zombie.png",
-        scale: new Vector3(0.25, 0.25, 0.25),
-        mesh: null
     }
 }
 
@@ -78,4 +62,27 @@ export class MonsterTemplate {
     textureName: string
     scale: Vector3
     mesh: Mesh | null
+    skeleton: Skeleton | null
+
+    constructor(name: string, meshName: string, textureName: string, scale: Vector3) {
+        this.name = name
+        this.meshName = meshName
+        this.textureName = textureName
+        this.scale = scale
+    }
+
+    clone (name: string): MonsterTemplate {
+        const clone = new MonsterTemplate(this.name, this.meshName, this.textureName, this.scale)
+        clone.mesh = this.mesh!.clone(name)
+        clone.mesh!.setEnabled(true)
+        clone.skeleton = this.skeleton
+        return clone
+    }
 }
+
+export const MonsterTemplates = {
+    Skeleton: new MonsterTemplate("Skeleton", "skeleton2.gltf", "skeleton.png", new Vector3(0.35, 0.35, 0.35)),
+    Zombie: new MonsterTemplate("Zombie", "zombie.gltf", "zombie.png", new Vector3(0.25, 0.25, 0.25))
+}
+
+

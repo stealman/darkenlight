@@ -92,9 +92,7 @@ export const Renderer = {
         }
 
         this.camera = new FreeCamera('camera1', cameraPosition, this.scene)
-        this.camera.parent = MyPlayer.charModel!.model
         this.camera.setTarget(new Vector3(0, cameraViewY, 0))
-        // this.camera.attachControl(canvasRef, true)
 
         // Debug layer
         if (Settings.debug) {
@@ -143,7 +141,7 @@ export const Renderer = {
             MonsterManager.onFrame(timeRate, actualTime)
             WearableManager.onFrame()
 
-            this.testMob.setTargetPoint(new Vector3(MyPlayer.playerData.xPos + 1, 0, MyPlayer.playerData.zPos + 1))
+            this.testMob.setTargetPoint(new Vector3(MyPlayer.playerData.xPos - 2, 0, MyPlayer.playerData.zPos - 2))
         }
 
         if (this.frame % 150 === 0) {

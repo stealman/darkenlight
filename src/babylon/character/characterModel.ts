@@ -50,7 +50,7 @@ export class CharacterModel {
         SceneLoader.ImportMeshAsync(
             "",
             "/assets/models/steve/",
-            "steve2.gltf",
+            "steve.gltf",
             scene
         ).then((result) => {
             this.model = result.meshes[0]
@@ -58,7 +58,7 @@ export class CharacterModel {
             this.model.rotation = new Vector3(0, 0, 0)
 
             // Apply material
-            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/default1.jpg", false, false)
+            const material = Materials.getBasicMaterial(scene, "steveMaterial", "/assets/models/steve/steve.jpg", false, false)
             this.model.getChildMeshes().forEach((mesh) => {
                 mesh.material = material
                 if (Settings.shadows) {
