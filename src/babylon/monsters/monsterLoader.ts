@@ -81,7 +81,7 @@ export class MonsterTemplate {
 }
 
 export const MonsterTemplates = {
-    Skeleton: new MonsterTemplate("Skeleton", "skeleton2.gltf", "skeleton.png", new Vector3(0.35, 0.35, 0.35)),
+    Skeleton: new MonsterTemplate("Skeleton", "skeleton.gltf", "skeleton.png", new Vector3(0.35, 0.35, 0.35)),
     Zombie: new MonsterTemplate("Zombie", "zombie.gltf", "zombie.png", new Vector3(0.25, 0.25, 0.25))
 }
 
