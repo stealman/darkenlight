@@ -1,4 +1,3 @@
-import {PlayerData} from "@/babylon/character/playerlData";
 import {
     Scene,
     Vector3,
@@ -6,27 +5,27 @@ import {
 import { WorldData } from '@/babylon/world/worldData'
 import { CharacterModel } from '@/babylon/character/characterModel'
 import { Utils } from '@/utils/utils'
+import { Data } from '@/data/globalData'
 
 export const MyPlayer = {
-    playerData: new PlayerData(0, 0, 0, 0),
     scene: null as Scene | null,
     charModel: null as CharacterModel | null,
 
     movementType: 'WALK',
+    boxSize: 0.6,
     autoAttackActive: false,
     autoAttackEnd: 0,
 
     initialize(scene: Scene) {
-        this.playerData = new PlayerData(100, 355, 570, 0)
-        this.charModel = new CharacterModel(this.playerData, scene)
-        this.playerData.yPos = this.calculateYPos()
-        this.playerData.modelYpos = this.playerData.yPos
+        this.charModel = new CharacterModel(Data.myChar, scene)
+        Data.myChar.yPos = this.calculateYPos()
+        Data.myChar.modelYpos = Data.myChar.yPos
     },
 
     onFrame(timeRate: number, actualTime: number) {
-        if (this.autoAttackActive && actualTime - this.playerData.lastAttackTime > this.playerData.attackCooldown && this.autoAttackEnd <= actualTime) {
-            this.playerData.lastAttackTime = actualTime
-            this.autoAttackEnd = actualTime + this.playerData.attackAnimationTime
+        if (this.autoAttackActive && actualTime - Data.myChar.lastAttackTime > Data.myChar.attackCooldown && this.autoAttackEnd <= actualTime) {
+            Data.myChar.lastAttackTime = actualTime
+            this.autoAttackEnd = actualTime + Data.myChar.attackAnimationTime
             this.charModel?.doAttackAnimation()
         }
 
@@ -35,28 +34,37 @@ export const MyPlayer = {
             return
         }
 
-        if (this.playerData.targetBlock != null) {
-            const targetBlock = this.playerData.targetBlock
-            const dx = Math.abs(targetBlock.x - this.playerData.xPos)
-            const dz = Math.abs(targetBlock.z - this.playerData.zPos)
+        if (Data.myChar.targetBlock != null) {
+            const targetBlock = Data.myChar.targetBlock
+            const dx = Math.abs(targetBlock.x - Data.myChar.xPos)
+            const dz = Math.abs(targetBlock.z - Data.myChar.zPos)
 
             if (dx < 0.1 && dz < 0.1) {
-                this.playerData.targetBlock = null
-                this.playerData.moveAngle = null
+                Data.myChar.targetBlock = null
+                Data.myChar.moveAngle = null
             }
         }
 
-        if (this.playerData.moveAngle != null) {
-            const speed = this.movementType === 'RUN' ? this.playerData.runSpeed : this.playerData.walkSpeed
-            this.playerData.xPos += Math.cos(this.playerData.moveAngle + Math.PI / 4) * speed * timeRate
-            this.playerData.zPos -= Math.sin(this.playerData.moveAngle + Math.PI / 4) * speed * timeRate
-            this.playerData.yPos = this.calculateYPos()
+        if (Data.myChar.moveAngle != null) {
+            const speed = this.movementType === 'RUN' ? Data.myChar.runSpeed : Data.myChar.walkSpeed
+            let tgtPos = new Vector3(Data.myChar.xPos + Math.cos(Data.myChar.moveAngle + Math.PI / 4) * speed * timeRate, 0, Data.myChar.zPos -Math.sin(Data.myChar.moveAngle + Math.PI / 4) * speed * timeRate)
 
-            if (this.movementType === 'RUN') {
-                this.charModel?.startRunAnimation()
-            } else {
-                this.charModel?.startWalkAnimation()
+            // Check if player can move to the target position, if not try to find an alternate position
+            if (!Utils.canCharacterMoveToPosition(this.boxSize, new Vector3(Data.myChar.xPos, 0, Data.myChar.zPos), tgtPos)) {
+                const alternateMovementPos = Utils.getAlternateMovementPos(this.boxSize, Data.myChar.moveAngle, Data.myChar.xPos, Data.myChar.zPos, tgtPos.x, tgtPos.z, speed, timeRate)
+                if (alternateMovementPos != null) {
+                    tgtPos = alternateMovementPos
+                } else {
+                    tgtPos = new Vector3(Data.myChar.xPos, 0, Data.myChar.zPos)
+                }
             }
+
+            Data.myChar.xPos = tgtPos.x
+            Data.myChar.zPos = tgtPos.z
+            Data.myChar.yPos = this.calculateYPos()
+
+            if (this.movementType === 'RUN') { this.charModel?.startRunAnimation() }
+            if (this.movementType === 'WALK') { this.charModel?.startWalkAnimation() }
         } else {
             this.charModel?.stopAnimation()
         }
@@ -66,7 +74,7 @@ export const MyPlayer = {
 
     calculateYPos() {
         const map = WorldData.getBlockMap()
-        const coveredBlocks = Utils.getCoveredBlocks(this.playerData.xPos, this.playerData.zPos, 0.4)
+        const coveredBlocks = Utils.getCoveredBlocks(Data.myChar.xPos, Data.myChar.zPos, this.boxSize)
 
         // From map get all blocks that are covered by the player and find the highest one
         let highest = 0
@@ -80,25 +88,25 @@ export const MyPlayer = {
     },
 
     setMoveTypeAngle(movementType: string, angle: number | null) {
-        this.playerData.moveAngle = angle
+        Data.myChar.moveAngle = angle
         this.movementType = movementType
     },
 
     setTargetPoint(point: Vector3 | null) {
         if (point == null) {
-            this.playerData.targetBlock = null
-            this.playerData.moveAngle = null
+            Data.myChar.targetBlock = null
+            Data.myChar.moveAngle = null
         } else {
-            point.x += this.playerData.xPos
-            point.z += this.playerData.zPos
+            point.x += Data.myChar.xPos
+            point.z += Data.myChar.zPos
 
             // if distance > 3 then movementType is run, otherwise walk
-            const distance = Vector3.Distance(point, new Vector3(this.playerData.xPos, 0, this.playerData.zPos))
+            const distance = Vector3.Distance(point, new Vector3(Data.myChar.xPos, 0, Data.myChar.zPos))
             this.movementType = distance > 4 ? 'RUN' : 'WALK'
 
-            const angle = Math.atan2(-(point.z - this.playerData.zPos), point.x - this.playerData.xPos)
-            this.playerData.moveAngle = angle - Math.PI / 4
-            this.playerData.targetBlock = point
+            const angle = Math.atan2(-(point.z - Data.myChar.zPos), point.x - Data.myChar.xPos)
+            Data.myChar.moveAngle = angle - Math.PI / 4
+            Data.myChar.targetBlock = point
         }
     }
 }

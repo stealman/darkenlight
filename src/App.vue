@@ -18,6 +18,8 @@ import {loadBMPData} from "./utils/bmpLoader";
 import {WorldData} from "@/babylon/world/worldData";
 import { Settings } from '@/settings/settings'
 import { ViewportManager } from '@/utils/viewport'
+import { Connector } from '@/network/connector'
+import { GameManager } from '@/GameManager'
 
 export default {
   name: 'App',
@@ -33,12 +35,10 @@ export default {
             Settings.debug = !Settings.touchEnabled
             // Settings.closeView = true
             //Settings.shadows = false
+            // console.log(Settings.shadows)
 
-            console.log(Settings.shadows)
-
-            await loadWorldData()
-            await Renderer.initialize(canvas.value)
-            ViewportManager.onResize()
+            GameManager.initialize(canvas)
+            Connector.initialize()
         }
     });
 
@@ -55,10 +55,6 @@ export default {
   }
 }
 
-async function loadWorldData() {
-  const mapData = await loadBMPData('./assets/map4.png') as number[][]
-  WorldData.setWorldMap(mapData)
-}
 </script>
 
 <style scoped>

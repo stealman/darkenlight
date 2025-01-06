@@ -1,4 +1,3 @@
-import { MyPlayer } from '@/babylon/character/myPlayer'
 import { WorldData } from '@/babylon/world/worldData'
 import { Matrix, Mesh } from '@babylonjs/core'
 import { BabylonUtils } from '@/babylon/utils'
@@ -7,6 +6,7 @@ import { Materials, PlaneEnum1, TerrainEnum1 } from '@/babylon/materials'
 import { WorldRenderer } from '@/babylon/world/worldRenderer'
 import { Settings } from '@/settings/settings'
 import { ViewportManager } from '@/utils/viewport'
+import { Data } from '@/data/globalData'
 
 export const TerrainManager = {
     terrainBlock1: null as Mesh,
@@ -40,7 +40,7 @@ export const TerrainManager = {
     },
 
     renderTerrain() {
-        const myPos = MyPlayer.playerData.getPositionRounded()
+        const myPos = Data.myChar.getPositionRounded()
         const map = WorldData.getBlockMap()
         const planeBlockMap = WorldData.getPlaneBlockMap()
 

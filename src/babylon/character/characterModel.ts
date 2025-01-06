@@ -5,11 +5,11 @@ import {
     SceneLoader, Skeleton, Sound, TransformNode,
     Vector3,
 } from '@babylonjs/core'
-import { PlayerData } from '@/babylon/character/playerlData'
 import { Settings } from '@/settings/settings'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { Materials } from '@/babylon/materials'
 import { WearableManager } from '@/babylon/item/wearableManager'
+import { PlayerData } from '@/data/playerData'
 
 export class CharacterModel {
     playerData: PlayerData
@@ -126,7 +126,7 @@ export class CharacterModel {
             this.assignLeftPauldron(2, 1)
             this.assignRightLeg(1, 1)
             this.assignLeftLeg(1, 1)
-            this.assignSword(1, 0)
+            this.assignSword(1, 1)
 
         }).catch((error) => {
             console.error("Error loading model:", error)

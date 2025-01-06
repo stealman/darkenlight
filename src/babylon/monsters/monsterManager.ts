@@ -5,26 +5,31 @@ import { MonsterModel } from '@/babylon/monsters/monsterModel'
 import { MonsterCodebook } from '@/babylon/monsters/monsterCodebook'
 
 export const MonsterManager = {
-    monsters: Array<Monster>(),
+    monsters: new Map as Map<number, Monster>,
 
     async initialize (scene: Scene) {
-        this.monsters = []
         await MonsterLoader.initialize(scene)
     },
 
-    addMonster (id: number, type: number, position: { x: number, z: number }): Monster {
-        const monsterType = MonsterCodebook.getMonsterTypeById(type)
-        const monsterModel = new MonsterModel(monsterType)
-        const monster = new Monster(id, monsterType, monsterModel, position.x, position.z)
+    addMonster (id: number, type: number, position: { x: number, z: number }, hp: number) {
+        if (this.monsters.has(id)) {
+            const mob = this.monsters.get(id)
+            mob.xPos = position.x
+            mob.zPos = position.z
+            mob.hp = hp
+        } else {
+            const monsterType = MonsterCodebook.getMonsterTypeById(type)
+            const monsterModel = new MonsterModel(monsterType)
+            const monster = new Monster(id, monsterType, monsterModel, position.x, position.z)
 
-        monsterModel.parent = monster
-        monsterModel.initializeBonesAndAnimations()
+            monsterModel.parent = monster
+            monsterModel.initializeBonesAndAnimations()
 
-        monsterModel.assignSword(1, 1, new Vector3(0.75, 0.75, 0.75))
-        monsterModel.assignHelmet(3, 0)
+            monsterModel.assignSword(1, 1, new Vector3(0.75, 0.75, 0.75))
+            monsterModel.assignHelmet(3, 1)
 
-        this.monsters.push(monster)
-        return monster
+            this.monsters.set(id, monster)
+        }
     },
 
     onFrame(timeRate: number, actualTime: number) {

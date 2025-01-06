@@ -12,6 +12,7 @@ import { Materials } from '@/babylon/materials'
 import { TreeManager } from '@/babylon/world/treeManager'
 import { BabylonUtils } from '@/babylon/utils'
 import { TerrainManager } from '@/babylon/world/terrainManager'
+import { Data } from '@/data/globalData'
 
 export const WorldRenderer = {
     symetricBlock1: null as SymetricBlock,
@@ -53,7 +54,7 @@ export const WorldRenderer = {
     },
 
     updateWorldParentNode() {
-        this.worldParentNode!.position = new Vector3(-MyPlayer.playerData.getOffset().x, -MyPlayer.playerData.modelYpos, -MyPlayer.playerData.getOffset().z)
+        this.worldParentNode!.position = new Vector3(-Data.myChar.getOffset().x, -Data.myChar.modelYpos, -Data.myChar.getOffset().z)
     }
 }
 

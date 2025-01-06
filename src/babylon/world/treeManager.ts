@@ -5,12 +5,14 @@ import { MaterialEnum1 } from '@/babylon/materials'
 import { PrefabTree1 } from '@/babylon/world/prefabs/tree1'
 import { WorldData } from '@/babylon/world/worldData'
 import { ViewportManager } from '@/utils/viewport'
+import { Data } from '@/data/globalData'
 
 export const TreeManager = {
     prefabs: {
         tree1: null as Prefab
     },
     allTrees : [],
+    visibleTrees : [],
 
     initialize(scene: Scene) {
         this.prefabs.tree1 = PrefabTree1.getPrefab(scene)
@@ -32,10 +34,10 @@ export const TreeManager = {
             this.prefabs[key].clearMatrices()
         }
 
-        const visibleTrees = this.getVisibleTrees()
-        for (let i = 0; i < visibleTrees.length; i++) {
-            visibleTrees[i].renderLeaves()
-            visibleTrees[i].renderTrunk()
+        this.updateVisibleTrees()
+        for (let i = 0; i < this.visibleTrees.length; i++) {
+            this.visibleTrees[i].renderLeaves()
+            this.visibleTrees[i].renderTrunk()
         }
 
         // Prefabs update thin instance buffers
@@ -44,17 +46,28 @@ export const TreeManager = {
         }
     },
 
-    getVisibleTrees() {
-        const myPos = MyPlayer.playerData.getPositionRounded()
-        const visibleTrees = []
+    updateVisibleTrees() {
+        const myPos = Data.myChar.getPositionRounded()
+        this.visibleTrees = []
 
         for (let i = 0; i < this.allTrees.length; i++) {
             const tree = this.allTrees[i]
             if (ViewportManager.isPointInVisibleMatrix(Math.floor(tree.position.x) - myPos.x, Math.floor(tree.position.z) - myPos.z, 2)) {
-                visibleTrees.push(tree)
+                this.visibleTrees.push(tree)
             }
         }
-        return visibleTrees
+        return this.visibleTrees
+    },
+
+    isPointInTree(x: number, z: number, size: number) {
+        for (let i = 0; i < this.allTrees.length; i++) {
+            const tree = this.allTrees[i]
+            const combinedSize = (tree.scale + size) / 2
+            if (Math.abs(tree.position.x - x) < combinedSize && Math.abs(tree.position.z - z) < combinedSize) {
+                return true
+            }
+        }
+        return false
     }
 }
 
@@ -76,7 +89,7 @@ class Tree1 {
     }
 
     renderLeaves() {
-        const myPos = MyPlayer.playerData.getPositionRounded()
+        const myPos = Data.myChar.getPositionRounded()
         const matrix = Matrix.Translation( this.position.x - myPos.x, this.position.y + (2 * this.scale), this.position.z - myPos.z);
         const rotationMatrix = Matrix.RotationY(this.rotation);
         const scaleMatrix = Matrix.Scaling(this.scale, this.scale, this.scale);
@@ -86,7 +99,7 @@ class Tree1 {
     }
 
     renderTrunk() {
-        const myPos = MyPlayer.playerData.getPositionRounded()
+        const myPos = Data.myChar.getPositionRounded()
         const scaleMatrix = Matrix.Scaling(this.scale / 2, this.scale / 2, this.scale / 2);
 
         // Blocks for trunk

@@ -1,4 +1,4 @@
-import { Mesh, Scene, SceneLoader, Skeleton, Vector3 } from '@babylonjs/core'
+import { AnimationGroup, Mesh, Scene, SceneLoader, Skeleton, Vector3 } from '@babylonjs/core'
 import { Materials } from '@/babylon/materials'
 import { Settings } from '@/settings/settings'
 import { MonsterType } from '@/babylon/monsters/monsterCodebook'
@@ -37,7 +37,8 @@ export const MonsterLoader = {
         model.setEnabled(false)
         mobType.mesh = model;
         mobType.skeleton = result.skeletons[0]
-        console.log(mobType.skeleton)
+        mobType.animation = result.animationGroups[0]
+        mobType.animation.stop()
         this.monsterClones[mobType.name] = []
     },
 
@@ -48,7 +49,7 @@ export const MonsterLoader = {
         if (clones.length > 0) {
             freeClone = clones.pop()
         } else {
-            const template = MonsterTemplates[mobType.name]
+            const template: MonsterTemplate = MonsterTemplates[mobType.name]
             freeClone = template.clone(mobType.name + clones.length)
         }
 
@@ -62,7 +63,8 @@ export class MonsterTemplate {
     textureName: string
     scale: Vector3
     mesh: Mesh | null
-    skeleton: Skeleton | null
+    skeleton: Skeleton | undefined
+    animation: AnimationGroup | undefined
 
     constructor(name: string, meshName: string, textureName: string, scale: Vector3) {
         this.name = name
@@ -75,7 +77,8 @@ export class MonsterTemplate {
         const clone = new MonsterTemplate(this.name, this.meshName, this.textureName, this.scale)
         clone.mesh = this.mesh!.clone(name)
         clone.mesh!.setEnabled(true)
-        clone.skeleton = this.skeleton
+        clone.skeleton = this.skeleton?.clone(name + "Skeleton")
+        clone.animation = this.animation?.clone(name + "Animation")
         return clone
     }
 }

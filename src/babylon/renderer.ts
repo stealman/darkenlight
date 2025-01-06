@@ -21,6 +21,7 @@ import { ViewportManager } from '@/utils/viewport'
 import { WearableManager } from '@/babylon/item/wearableManager'
 import { MonsterManager } from '@/babylon/monsters/monsterManager'
 import { Monster } from '@/babylon/monsters/monster'
+import { Data } from '@/data/globalData'
 
 /**
  * Main Renderer
@@ -38,8 +39,6 @@ export const Renderer = {
 
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
-
-    testMob: null as Monster,
 
     async initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
         // Antialiasing DISABLED, may be enabled on better devices
@@ -78,8 +77,6 @@ export const Renderer = {
         Materials.initialize(this.scene)
         WorldRenderer.initialize(this.scene, this.shadow)
         this.light.parent = WorldRenderer.worldParentNode
-
-        this.testMob = MonsterManager.addMonster(1, 1, { x: 360, z: 565 })
 
         // Create the camera
         const cameraPosition = new Vector3(-12, 12, -12)
@@ -140,15 +137,13 @@ export const Renderer = {
             MyPlayer.onFrame(timeRate, actualTime)
             MonsterManager.onFrame(timeRate, actualTime)
             WearableManager.onFrame()
-
-            this.testMob.setTargetPoint(new Vector3(MyPlayer.playerData.xPos - 2, 0, MyPlayer.playerData.zPos - 2))
         }
 
         if (this.frame % 150 === 0) {
             MiniMap.updateMiniMap()
         }
 
-        const pos = MyPlayer.playerData.getPositionRounded()
+        const pos = Data.myChar.getPositionRounded()
 
         // If the player moved, render the world
         if (this.lastPos == null || pos.x !== this.lastPos.x || pos.z !== this.lastPos.z) {
@@ -180,7 +175,7 @@ export const Renderer = {
 
     actualizeDebug() {
         document.getElementById("fpsLabel").innerHTML = "FPS: " + this.fps;
-        document.getElementById("posLabel").innerHTML = "POS: " + MyPlayer.playerData.getPositionRounded().toString();
+        document.getElementById("posLabel").innerHTML = "POS: " + Data.myChar.getPositionRounded().toString();
     },
 
     requestFullscreen() {

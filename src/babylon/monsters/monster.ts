@@ -19,11 +19,11 @@ export class Monster {
 
     moveAngle: number | null = null
 
-    constructor(id: number, mobType: MonsterType, model: MonsterModel, xPos: number, zPos: number) {
+    constructor(id: number, mobType: MonsterType, model: MonsterModel, xPos: number, zPos: number, hp: number) {
         this.id = id
         this.mobType = mobType
         this.model = model
-        this.hp = 100
+        this.hp = hp
         this.xPos = xPos
         this.zPos = zPos
         this.yPos = 0
@@ -52,6 +52,10 @@ export class Monster {
         if (this.moveAngle != null) {
             this.xPos += (Math.cos(this.moveAngle + Math.PI / 4) * stepSize)
             this.zPos -= (Math.sin(this.moveAngle + Math.PI / 4) * stepSize)
+
+            this.model.startWalkAnimation()
+        } else {
+            this.model.stopAnimation()
         }
 
         this.yPos = this.calculateYPos()

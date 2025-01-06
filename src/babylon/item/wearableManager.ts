@@ -70,7 +70,7 @@ export const WearableManager = {
     },
 
     assignSword(node, modelId, materialId, scale: Vector3 = new Vector3(1, 1, 1)) {
-        this.swordManager.assignItem(node, modelId, SwordMaterials.longsword_iron, scale)
+        this.swordManager.assignItem(node, modelId, SwordMaterials.longsword_mythril, scale)
     },
 
     onFrame() {
