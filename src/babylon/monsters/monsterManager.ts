@@ -25,8 +25,8 @@ export const MonsterManager = {
             monsterModel.parent = monster
             monsterModel.initializeBonesAndAnimations()
 
-            monsterModel.assignSword(1, 1, new Vector3(0.75, 0.75, 0.75))
-            monsterModel.assignHelmet(3, 1)
+            //monsterModel.assignSword(1, 1, new Vector3(0.75, 0.75, 0.75))
+            //monsterModel.assignHelmet(3, 1)
 
             this.monsters.set(id, monster)
         }
@@ -45,6 +45,12 @@ export const MonsterManager = {
     onFrame(timeRate: number, actualTime: number) {
         this.monsters.forEach(monster => {
             monster.onFrame(timeRate, actualTime)
+        })
+    },
+
+    onAnimFrame(animFrame: number) {
+        this.monsters.forEach(monster => {
+            monster.onAnimFrame(animFrame)
         })
     }
 }

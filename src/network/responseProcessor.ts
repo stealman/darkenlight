@@ -6,6 +6,7 @@ import { MonsterManager } from '@/babylon/monsters/monsterManager'
 export const ResponseProcessor = {
 
     async processResponse(response) {
+        //console.log(response.length)
         for (let i = 0; i < response.length; i++) {
             const msg = response[i]
             switch (msg.t) {

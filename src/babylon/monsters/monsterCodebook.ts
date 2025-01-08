@@ -1,4 +1,5 @@
 import { MonsterModel } from '@/babylon/monsters/monsterModel'
+import { MeshAnimation } from '@/babylon/animations/animation'
 
 export const MonsterCodebook = {
 
@@ -24,15 +25,12 @@ export const MonsterCodebook = {
             { name: "Walk", startFrame: 76, endFrame: 225 }
         ]
 
-        const newAnimationGroups = animations.map(({ name, startFrame, endFrame }) => {
-            const newGroup = model.animation.clone(name + Math.random(), undefined, true);
-            newGroup.from = startFrame;
-            newGroup.to = endFrame;
-            return newGroup;
+        const groups = animations.map(({ name, startFrame, endFrame }) => {
+            return new MeshAnimation(model.animation.clone(name + Math.random(), undefined, true), startFrame, endFrame)
         });
 
-        model.idleAnim = newAnimationGroups[0]
-        model.walkAnim = newAnimationGroups[1]
+        model.idleAnim = groups[0]
+        model.walkAnim = groups[1]
     }
 }
 

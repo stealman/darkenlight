@@ -7,15 +7,16 @@ import { Monster } from '@/babylon/monsters/monster'
 import { MonsterLoader, MonsterTemplate } from '@/babylon/monsters/monsterLoader'
 import { MonsterCodebook, MonsterType } from '@/babylon/monsters/monsterCodebook'
 import { WearableManager } from '@/babylon/item/wearableManager'
-import { AnimTransition } from '@/babylon/character/characterModel'
 import { Data } from '@/data/globalData'
+import { MeshAnimation } from '@/babylon/animations/animation'
 
 export class MonsterModel {
     parent: Monster
     type: MonsterType
-    // modelTemplate: MonsterTemplate
+    node: Mesh
     mesh: Mesh
 
+    template: MonsterTemplate
     modelYpos: number = 0
     modelRotation: number = 0
     modelYAngleOffset: number = Math.PI * 1 / 4
@@ -26,25 +27,22 @@ export class MonsterModel {
     lhandNode: TransformNode = new TransformNode("lhandNode")
     rhandNode: TransformNode = new TransformNode("rhandNode")
 
-    walkAnim: AnimationGroup | undefined
-    runAnim: AnimationGroup | undefined
-    idleAnim: AnimationGroup | undefined
-
-    actualAnim: AnimationGroup | undefined
-    animTransition: AnimTransition | null
+    idleAnim: MeshAnimation | undefined
+    walkAnim: MeshAnimation | undefined
+    runningAnims: Set<MeshAnimation>
 
     constructor(monsterType: MonsterType) {
-        const modelTemplate = MonsterLoader.getMonsterClone(monsterType)
-        this.mesh = modelTemplate.mesh!
-        this.skeleton = modelTemplate.skeleton!
-        this.animation = modelTemplate.animation!
         this.type = monsterType
+        this.template = MonsterLoader.getMonsterClone(monsterType)
+        this.node = this.template.node
+        this.mesh = this.template.mesh
+        this.skeleton = this.template.skeleton
+        this.animation = this.template.animation
+        this.runningAnims = new Set<MeshAnimation>()
     }
 
     initializeBonesAndAnimations() {
         MonsterCodebook.initializeNodesAndAnimations(this)
-        this.idleAnim?.start(true, 0.5)
-        this.actualAnim = this.idleAnim
     }
 
     assignSword(type, materialId, scale = new Vector3(1, 1, 1)) {
@@ -57,19 +55,24 @@ export class MonsterModel {
 
     onFrame(timeRate: number) {
         this.resolveMovement(timeRate)
+    }
 
-        if (this.animTransition) {
-            this.animTransition.onFrame(timeRate)
-            if (this.animTransition.ended) {
-                this.animTransition = null
-            }
+    onAnimFrame(animFrame: number) {
+        if (this.runningAnims.size > 0) {
+            this.skeleton.prepare()
+
+            this.runningAnims.forEach(anim => {
+                anim.onAnimFrame(animFrame)
+                if (!anim.running) {
+                    this.runningAnims.delete(anim)
+                }
+            })
         }
     }
 
     resolveMovement(timeRate: number) {
-        // Set model position base ond xPos and zPos and myPlayer.playerData x and z pos
-        this.mesh.position.x = this.parent.xPos - Data.myChar.xPos
-        this.mesh.position.z = this.parent.zPos - Data.myChar.zPos
+        this.node.position.x = this.parent.xPos - Data.myChar.xPos
+        this.node.position.z = this.parent.zPos - Data.myChar.zPos
 
         this.resolveModelYpos(timeRate)
         this.resolveModelRotation(timeRate)
@@ -79,8 +82,8 @@ export class MonsterModel {
      * Approximate model Y position to the player Y position
      */
     resolveModelYpos(timeRate: number) {
-        this.mesh.position.y = (this.parent.yPos - Data.myChar.modelYpos)
-        this.modelYpos = this.mesh.position.y
+        this.node.position.y = (this.parent.yPos - Data.myChar.modelYpos)
+        this.modelYpos = this.node.position.y
     }
 
     /**
@@ -89,7 +92,7 @@ export class MonsterModel {
     resolveModelRotation(timeRate: number) {
         if (!this.parent.moveAngle) return
 
-        const myAngle = this.mesh.rotation.y - this.modelYAngleOffset
+        const myAngle = this.node.rotation.y - this.modelYAngleOffset
 
         let angleDifference = this.parent.moveAngle - myAngle;
         const rotationSpeed = this.parent.rotationSpeed * timeRate;
@@ -100,40 +103,34 @@ export class MonsterModel {
         }
 
         if (Math.abs(angleDifference) < rotationSpeed) {
-            this.mesh.rotation.y = this.parent.moveAngle + this.modelYAngleOffset;
+            this.node.rotation.y = this.parent.moveAngle + this.modelYAngleOffset;
         } else {
-            this.mesh.rotation.y += Math.sign(angleDifference) * rotationSpeed;
+            this.node.rotation.y += Math.sign(angleDifference) * rotationSpeed;
         }
-        this.modelRotation = this.mesh.rotation.y;
+        this.modelRotation = this.node.rotation.y;
     }
 
-    startWalkAnimation() {
-        if (this.actualAnim !== this.walkAnim) {
-            this.transitionToAnimation(this.walkAnim, 0.15, true, 3)
-            this.actualAnim = this.walkAnim
-        }
+    doWalk() {
+        this.mesh.skeleton = this.template.walkSkeleton
+        this.runningAnims.clear()
     }
 
-    stopAnimation() {
-        if (this.actualAnim !== this.idleAnim) {
-            this.transitionToAnimation(this.idleAnim, 0.25, true, 0.5)
-            this.actualAnim = this.idleAnim
-        }
+    doIdle() {
+        this.mesh.skeleton = this.skeleton
+        this.transitionToAnimation(this.idleAnim!, true, true, 1.0)
     }
 
-    transitionToAnimation(targetAnim: AnimationGroup | undefined, duration: number, loop = false, speed = 1.0) {
-        if (!this.actualAnim || !targetAnim || this.actualAnim === targetAnim) return;
-
-        // If there is already an ongoing transition
-        if (this.animTransition) {
-            // Force end the transition if the target animation is different
-            if (this.animTransition.toAnimation !== targetAnim) {
-                this.animTransition.forceEnd()
-            } else {
-                return
+    transitionToAnimation(target: MeshAnimation, fadeIn: boolean = false, loop = false, speed = 1.0) {
+        this.runningAnims.forEach(anim => {
+            if (anim !== target) {
+                anim.fadeOut()
             }
-        }
+        })
 
-        this.animTransition = new AnimTransition(duration, this.actualAnim, targetAnim, loop, speed)
+        if (!this.runningAnims.has(target!)) {
+            this.mesh.skeleton = this.skeleton
+            target.start(fadeIn, speed, loop)
+            this.runningAnims.add(target)
+        }
     }
 }

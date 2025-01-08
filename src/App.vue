@@ -7,18 +7,17 @@
 
       <span id="fpsLabel" style="z-index: 100; font-size: 20px; color: #aaa; position: absolute; left: 10px; top: 10px;">FPS: </span>
       <span id="posLabel" style="z-index: 100; font-size: 20px; color: #aaa; position: absolute; left: 10px; top: 30px;">POS: </span>
+      <span id="meshLabel" style="z-index: 100; font-size: 20px; color: #aaa; position: absolute; left: 10px; top: 50px;">MESH: </span>
+      <span id="facesLabel" style="z-index: 100; font-size: 20px; color: #aaa; position: absolute; left: 10px; top: 70px;">FACES: </span>
       <button id="fullScreenBtn" style="cursor: pointer; text-decoration: underline; font-size: 18px; color: #aaa; position: absolute; left: 10px; top: 160px;" @click="this.requestFullscreen()">Fullscreen</button>
-      <button id="freezeBtn" style="cursor: pointer; text-decoration: underline; font-size: 18px; color: #aaa; position: absolute; left: 10px; top: 220px;" @click="this.freezeActiveMesh()">Freeze</button>
+     <!-- <button id="freezeBtn" style="cursor: pointer; text-decoration: underline; font-size: 18px; color: #aaa; position: absolute; left: 10px; top: 220px;" @click="this.freezeActiveMesh()">Freeze</button> -->
   </div>
 </template>
 
 <script lang="ts">
 import { ref, onMounted } from 'vue'
 import { Renderer } from './babylon/renderer'
-import {loadBMPData} from "./utils/bmpLoader";
-import {WorldData} from "@/babylon/world/worldData";
 import { Settings } from '@/settings/settings'
-import { ViewportManager } from '@/utils/viewport'
 import { Connector } from '@/network/connector'
 import { GameManager } from '@/GameManager'
 
@@ -32,11 +31,11 @@ export default {
     onMounted(async () => {
         if (canvas.value) {
             Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 )
-            //Settings.shadows = !Settings.touchEnabled
+            Settings.shadows = !Settings.touchEnabled
             Settings.debug = !Settings.touchEnabled
-            Settings.debug = true
+            // Settings.debug = true
                 // Settings.closeView = true
-            //Settings.shadows = false
+            //Settings.shadows = true
             // console.log(Settings.shadows)
 
             GameManager.initialize(canvas)
@@ -56,8 +55,7 @@ export default {
     },
 
     freezeActiveMesh() {
-        console.log("Freeze")
-      Renderer.scene.freezeActiveMeshes()
+      Renderer.freezeActiveMeshes()
     }
   }
 }

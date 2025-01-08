@@ -10,6 +10,7 @@ import { AudioManager } from '@/babylon/audio/audioManager'
 import { Materials } from '@/babylon/materials'
 import { WearableManager } from '@/babylon/item/wearableManager'
 import { PlayerData } from '@/data/playerData'
+import { AnimTransition } from '@/babylon/animations/animation'
 
 export class CharacterModel {
     playerData: PlayerData
@@ -269,54 +270,5 @@ export class CharacterModel {
             this.model.rotation.y += Math.sign(angleDifference) * rotationSpeed;
         }
         this.playerData.modelRotation = this.model.rotation.y;
-    }
-}
-
-export class AnimTransition {
-    duration: number
-    fromAnimation: AnimationGroup
-    toAnimation: AnimationGroup
-    loop: boolean
-    speed: number
-
-    fromWeight: number
-    toWeight: number
-    ended: boolean
-
-    constructor(duration: number, fromAnimation: AnimationGroup, toAnimation: AnimationGroup, loop = false, speed = 1.0) {
-        this.duration = duration
-        this.fromAnimation = fromAnimation
-        this.toAnimation = toAnimation
-        this.loop = loop
-        this.speed = speed
-        this.ended = false
-
-        this.fromWeight = 1
-        this.toWeight = 0
-
-        // Start target animation but set its weight to 0 initially
-        this.toAnimation.start(loop, speed, this.toAnimation['startFrame'], this.toAnimation['endFrame'])
-        this.toAnimation.setWeightForAllAnimatables(0)
-        this.fromAnimation.setWeightForAllAnimatables(1)
-    }
-
-    onFrame(timeRate: number) {
-        const weightChange = timeRate / this.duration
-
-        this.fromWeight = Math.max(0, this.fromWeight - weightChange)
-        this.toWeight = Math.min(1, this.toWeight + weightChange)
-
-        this.fromAnimation.setWeightForAllAnimatables(this.fromWeight)
-        this.toAnimation.setWeightForAllAnimatables(this.toWeight)
-
-        if (this.fromWeight === 0 && this.toWeight === 1) {
-            this.fromAnimation.stop()
-            this.ended = true
-        }
-    }
-
-    forceEnd() {
-        this.fromAnimation.stop()
-        this.toAnimation.setWeightForAllAnimatables(1)
     }
 }

@@ -4,7 +4,7 @@ import {
     Vector3,
     FreeCamera,
     PointLight,
-    ShadowGenerator, Color3, Color4, RenderTargetTexture
+    ShadowGenerator, Color3, Color4, RenderTargetTexture, SceneInstrumentation,
 } from '@babylonjs/core'
 import {UnwrapRef} from "vue"
 import '@babylonjs/inspector'
@@ -20,8 +20,8 @@ import { AudioManager } from '@/babylon/audio/audioManager'
 import { ViewportManager } from '@/utils/viewport'
 import { WearableManager } from '@/babylon/item/wearableManager'
 import { MonsterManager } from '@/babylon/monsters/monsterManager'
-import { Monster } from '@/babylon/monsters/monster'
 import { Data } from '@/data/globalData'
+import { MonsterLoader, MonsterTemplates } from '@/babylon/monsters/monsterLoader'
 
 /**
  * Main Renderer
@@ -29,13 +29,22 @@ import { Data } from '@/data/globalData'
 export const Renderer = {
     initialized: false,
     scene: null as Scene,
+    instrumentation: null as SceneInstrumentation | null,
     engine: null as Engine | null,
     camera: null as FreeCamera | null,
 
     lastPos: null as Vector3 | null,
     fps: 0 as number,
     frame: 0 as number,
+
+    // Animations run 40 FPS
+    animationFrameTime: 40 as number,
+    animationSpeedRatio: 1 as number,
+    animationFrame: 0 as number,
     lastFrameTime: 0 as number,
+    lastAnimationFrameTime: 0 as number,
+
+    activeMeshesFrozen: false,
 
     shadow: {} as ShadowGenerator,
     light: {} as PointLight,
@@ -43,6 +52,8 @@ export const Renderer = {
     async initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
         this.engine = new Engine(canvasRef, true)
         this.createScene(this.engine)
+
+        this.animationSpeedRatio = this.animationFrameTime / 25
 
         this.light = new PointLight("pointLight", new Vector3(-20, 50, 15), this.scene);
         this.light.intensity = 1.0;
@@ -60,6 +71,8 @@ export const Renderer = {
         }
 
         // Initialize game objects and managers
+        this.instrumentation = new SceneInstrumentation(this.scene);
+        this.instrumentation.captureFrameTime = true;
 
         AudioManager.initialize(this.scene)
         MiniMap.initialize()
@@ -125,17 +138,38 @@ export const Renderer = {
             return
         }
         this.frame++
+
         const actualTime = new Date().getTime()
         const timeRate = (actualTime - this.lastFrameTime) / 1000
-        this.lastFrameTime = actualTime
 
         this.fps = parseInt(this.engine?.getFps().toFixed());
         this.actualizeDebug()
 
         if (this.frame > 1) {
             MyPlayer.onFrame(timeRate, actualTime)
+
+            if (actualTime - this.lastAnimationFrameTime >= this.animationFrameTime) {
+                let timeExceeded: number = 0
+                if (this.lastAnimationFrameTime > 0) {
+                    timeExceeded = actualTime - this.lastAnimationFrameTime - this.animationFrameTime
+                }
+
+                MonsterTemplates.Skeleton.assetContainer?.skeletons.forEach((skeleton) => skeleton.prepare());
+
+                MonsterLoader.onAnimFrame(this.animationFrame)
+                MonsterManager.onAnimFrame(this.animationFrame)
+                this.lastAnimationFrameTime = actualTime - timeExceeded
+                this.animationFrame++
+            }
+
             MonsterManager.onFrame(timeRate, actualTime)
             WearableManager.onFrame()
+        }
+
+        if (this.frame % 10 === 0) {
+            if (!this.activeMeshesFrozen) {
+                this.freezeActiveMeshes()
+            }
         }
 
         if (this.frame % 150 === 0) {
@@ -161,6 +195,18 @@ export const Renderer = {
         if (!ViewportManager.viewPortInitialized) {
             ViewportManager.calculateViewport(this.camera)
         }
+
+        this.lastFrameTime = actualTime
+    },
+
+    freezeActiveMeshes() {
+        this.scene.freezeActiveMeshes()
+        this.activeMeshesFrozen = true
+    },
+
+    unfreezeActiveMeshes() {
+        this.scene.unfreezeActiveMeshes()
+        this.activeMeshesFrozen = false
     },
 
     createScene(engine: Engine) {
@@ -173,8 +219,12 @@ export const Renderer = {
     },
 
     actualizeDebug() {
-        document.getElementById("fpsLabel").innerHTML = "FPS: " + this.fps;
+        // value={1000.0 / this._sceneInstrumentation!.frameTimeCounter.lastSecAverage}
+        const absoluteFPS = 1000 / this.instrumentation!.frameTimeCounter.lastSecAverage
+        document.getElementById("fpsLabel").innerHTML = "FPS: " + this.fps + " | " + absoluteFPS.toFixed(0);
         document.getElementById("posLabel").innerHTML = "POS: " + Data.myChar.getPositionRounded().toString();
+        document.getElementById("meshLabel").innerHTML = "MESH: " + this.scene.getActiveMeshes().length.toString() + " | DC: " + this.instrumentation!.drawCallsCounter.current.toString()
+        document.getElementById("facesLabel").innerHTML = "FACE: " + (this.scene.getActiveIndices() / 3).toString();
     },
 
     requestFullscreen() {

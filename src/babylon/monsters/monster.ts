@@ -34,6 +34,10 @@ export class Monster {
         this.model.onFrame(timeRate)
     }
 
+    onAnimFrame(animFrame: number) {
+        this.model.onAnimFrame(animFrame)
+    }
+
     resolveMovement(timeRate: number) {
         const stepSize = this.runSpeed * timeRate
         if (this.targetPoint != null) {
@@ -53,9 +57,9 @@ export class Monster {
             this.xPos += (Math.cos(this.moveAngle + Math.PI / 4) * stepSize)
             this.zPos -= (Math.sin(this.moveAngle + Math.PI / 4) * stepSize)
 
-            this.model.startWalkAnimation()
+            this.model.doWalk()
         } else {
-            this.model.stopAnimation()
+            this.model.doIdle()
         }
 
         this.yPos = this.calculateYPos()

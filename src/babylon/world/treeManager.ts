@@ -20,7 +20,7 @@ export const TreeManager = {
     },
 
     addTrees() {
-        for (let i = 0; i < 250; i++) {
+        for (let i = 0; i < 0; i++) {
             const x = 300 + Math.random() * 100
             const z = 500 + Math.random() * 100
             const y = WorldData.getBlockMap()[Math.ceil(x)][Math.ceil(z)].height + 0.5

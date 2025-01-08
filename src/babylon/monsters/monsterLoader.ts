@@ -2,15 +2,15 @@ import { AnimationGroup, AssetContainer, Mesh, Scene, SceneLoader, Skeleton, Vec
 import { Materials } from '@/babylon/materials'
 import { Settings } from '@/settings/settings'
 import { MonsterType } from '@/babylon/monsters/monsterCodebook'
+import { Renderer } from '@/babylon/renderer'
 
 export const MonsterLoader = {
     scene: null as Scene,
     monstersMeshes: [] as Mesh[],
-    monsterClones: [],
+    monsterTemplates: [],
 
     async initialize (scene: Scene) {
         this.scene = scene
-        this.monsterClones = []
         await this.loadMonsterMesh(MonsterTemplates.Skeleton)
         // await this.loadMonsterMesh(MonsterTypes.ZOMBIE)
     },
@@ -29,27 +29,21 @@ export const MonsterLoader = {
         model.getChildMeshes().forEach(mesh => {
             mesh.material = material;
             if (Settings.shadows) {
-                mesh.receiveShadows = true;
+                 mesh.receiveShadows = true;
             }
         });
 
         model.setEnabled(false)
-        mobType.assetContainer = result
-        this.monsterClones[mobType.name] = []
+        mobType.setAssetContainer(result)
+        this.monsterTemplates[mobType.name] = []
     },
 
     getMonsterClone (mobType: MonsterType): MonsterTemplate {
-        const clones = this.monsterClones[mobType.name]
+        return MonsterTemplates[mobType.name].clone(mobType.name)
+    },
 
-        let freeClone = null
-        if (clones.length > 0) {
-            freeClone = clones.pop()
-        } else {
-            const template: MonsterTemplate = MonsterTemplates[mobType.name]
-            freeClone = template.clone(mobType.name)
-        }
-
-        return freeClone
+    onAnimFrame (animFrrame: number) {
+        MonsterTemplates.Skeleton.onAnimFrame(animFrrame)
     }
 }
 
@@ -61,42 +55,67 @@ export class MonsterTemplate {
 
     assetContainer?: AssetContainer
 
-    mesh: Mesh | null
-    skeleton: Skeleton | undefined
-    animation: AnimationGroup | undefined
+    node: Mesh
+    mesh: Mesh
+    skeleton: Skeleton
+    walkSkeleton: Skeleton
+    walkSpeedRatio: number = 4
+    animation: AnimationGroup
 
-    constructor(name: string, meshName: string, textureName: string, scale: Vector3) {
+    clones? = []
+
+    constructor(name: string, meshName: string, textureName: string, walkSpeedRatio: number, scale: Vector3, clones?: []) {
         this.name = name
         this.meshName = meshName
         this.textureName = textureName
         this.scale = scale
+        this.clones = clones
     }
 
-    clone (name: string): MonsterTemplate {
-        const clone = new MonsterTemplate(this.name, this.meshName, this.textureName, this.scale)
+    setAssetContainer (assetContainer: AssetContainer) {
+        this.assetContainer = assetContainer
+        this.assetContainer.animationGroups[0].pause()
+    }
+
+    onAnimFrame (animFrame: number) {
+        const frameNr = 75 + (animFrame * Renderer.animationSpeedRatio * this.walkSpeedRatio) % 150
+        if (this.assetContainer) {
+            this.assetContainer.animationGroups[0].goToFrame(frameNr)
+        }
+    }
+
+    clone (): MonsterTemplate {
+        Renderer.unfreezeActiveMeshes()
 
         const entries = this.assetContainer!.instantiateModelsToScene(undefined, false, {
-            doNotInstantiate: true,
+           doNotInstantiate: true,
         })
 
-        clone.mesh = entries.rootNodes[0] as Mesh
-        clone.mesh.alwaysSelectAsActiveMesh = true
+        const clone = new MonsterTemplate(this.name, this.meshName, this.textureName, this.walkSpeedRatio, this.scale)
+        clone.node = entries.rootNodes[0] as Mesh
+        clone.node.alwaysSelectAsActiveMesh = true
+        clone.node.setEnabled(true)
 
-        clone.mesh.getChildMeshes().forEach(mesh => {
-            mesh.alwaysSelectAsActiveMesh = true
-        } )
+        clone.node.getChildMeshes().forEach(mesh => {
+            clone.mesh = mesh as Mesh
+        })
 
-        clone.mesh.setEnabled(true)
         clone.skeleton = entries.skeletons[0]
-        clone.animation = entries.animationGroups[0]
+        clone.walkSkeleton = this.assetContainer!.skeletons[0]
+        clone.mesh!.skeleton = entries.skeletons[0]
 
+        clone.animation = entries.animationGroups[0]
+        clone.animation.play(false)
+        clone.animation?.pause()
+
+        this.clones.push(clone)
         return clone
     }
 }
 
 export const MonsterTemplates = {
-    Skeleton: new MonsterTemplate("Skeleton", "skeleton.gltf", "skeleton.png", new Vector3(0.35, 0.35, 0.35)),
-    Zombie: new MonsterTemplate("Zombie", "zombie.gltf", "zombie.png", new Vector3(0.25, 0.25, 0.25))
+    Skeleton: new MonsterTemplate("Skeleton", "skeleton.gltf", "skeleton.png", 5, new Vector3(0.35, 0.35, 0.35), []),
+    Zombie: new MonsterTemplate("Zombie", "zombie.gltf", "zombie.png", 4, new Vector3(0.25, 0.25, 0.25), [])
 }
 
 
