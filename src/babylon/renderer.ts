@@ -41,7 +41,6 @@ export const Renderer = {
     light: {} as PointLight,
 
     async initialize(canvasRef: UnwrapRef<HTMLCanvasElement>) {
-        // Antialiasing DISABLED, may be enabled on better devices
         this.engine = new Engine(canvasRef, true)
         this.createScene(this.engine)
 

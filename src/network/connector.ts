@@ -5,7 +5,7 @@ export const Connector = {
     socket: null as WebSocket,
 
     initialize() {
-        this.socket = new WebSocket('ws://localhost:3000')
+        this.socket = new WebSocket('ws://192.168.0.227:3000')
 
         this.socket.onopen = () => {
             console.log('WS connection estabilished')

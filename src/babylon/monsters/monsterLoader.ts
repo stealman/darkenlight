@@ -1,4 +1,4 @@
-import { AnimationGroup, Mesh, Scene, SceneLoader, Skeleton, Vector3 } from '@babylonjs/core'
+import { AnimationGroup, AssetContainer, Mesh, Scene, SceneLoader, Skeleton, Vector3 } from '@babylonjs/core'
 import { Materials } from '@/babylon/materials'
 import { Settings } from '@/settings/settings'
 import { MonsterType } from '@/babylon/monsters/monsterCodebook'
@@ -16,10 +16,9 @@ export const MonsterLoader = {
     },
 
     async loadMonsterMesh (mobType: MonsterTemplate) {
-        const result = await SceneLoader.ImportMeshAsync(
+        const result = await SceneLoader.LoadAssetContainerAsync(
             "",
-            "/assets/models/monsters/",
-            mobType.meshName, this.scene!
+            "/assets/models/monsters/" + mobType.meshName, this.scene!
         )
 
         const model = result.meshes[0];
@@ -35,10 +34,7 @@ export const MonsterLoader = {
         });
 
         model.setEnabled(false)
-        mobType.mesh = model;
-        mobType.skeleton = result.skeletons[0]
-        mobType.animation = result.animationGroups[0]
-        mobType.animation.stop()
+        mobType.assetContainer = result
         this.monsterClones[mobType.name] = []
     },
 
@@ -50,7 +46,7 @@ export const MonsterLoader = {
             freeClone = clones.pop()
         } else {
             const template: MonsterTemplate = MonsterTemplates[mobType.name]
-            freeClone = template.clone(mobType.name + clones.length)
+            freeClone = template.clone(mobType.name)
         }
 
         return freeClone
@@ -62,6 +58,9 @@ export class MonsterTemplate {
     meshName: string
     textureName: string
     scale: Vector3
+
+    assetContainer?: AssetContainer
+
     mesh: Mesh | null
     skeleton: Skeleton | undefined
     animation: AnimationGroup | undefined
@@ -75,10 +74,22 @@ export class MonsterTemplate {
 
     clone (name: string): MonsterTemplate {
         const clone = new MonsterTemplate(this.name, this.meshName, this.textureName, this.scale)
-        clone.mesh = this.mesh!.clone(name)
-        clone.mesh!.setEnabled(true)
-        clone.skeleton = this.skeleton?.clone(name + "Skeleton")
-        clone.animation = this.animation?.clone(name + "Animation")
+
+        const entries = this.assetContainer!.instantiateModelsToScene(undefined, false, {
+            doNotInstantiate: true,
+        })
+
+        clone.mesh = entries.rootNodes[0] as Mesh
+        clone.mesh.alwaysSelectAsActiveMesh = true
+
+        clone.mesh.getChildMeshes().forEach(mesh => {
+            mesh.alwaysSelectAsActiveMesh = true
+        } )
+
+        clone.mesh.setEnabled(true)
+        clone.skeleton = entries.skeletons[0]
+        clone.animation = entries.animationGroups[0]
+
         return clone
     }
 }

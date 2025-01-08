@@ -25,7 +25,7 @@ export const MonsterCodebook = {
         ]
 
         const newAnimationGroups = animations.map(({ name, startFrame, endFrame }) => {
-            const newGroup = model.animation.clone(name);
+            const newGroup = model.animation.clone(name + Math.random(), undefined, true);
             newGroup.from = startFrame;
             newGroup.to = endFrame;
             return newGroup;

@@ -6,7 +6,6 @@ import {
 import { Monster } from '@/babylon/monsters/monster'
 import { MonsterLoader, MonsterTemplate } from '@/babylon/monsters/monsterLoader'
 import { MonsterCodebook, MonsterType } from '@/babylon/monsters/monsterCodebook'
-import { MyPlayer } from '@/babylon/character/myPlayer'
 import { WearableManager } from '@/babylon/item/wearableManager'
 import { AnimTransition } from '@/babylon/character/characterModel'
 import { Data } from '@/data/globalData'
@@ -14,7 +13,7 @@ import { Data } from '@/data/globalData'
 export class MonsterModel {
     parent: Monster
     type: MonsterType
-    modelTemplate: MonsterTemplate
+    // modelTemplate: MonsterTemplate
     mesh: Mesh
 
     modelYpos: number = 0
@@ -35,10 +34,10 @@ export class MonsterModel {
     animTransition: AnimTransition | null
 
     constructor(monsterType: MonsterType) {
-        this.modelTemplate = MonsterLoader.getMonsterClone(monsterType)
-        this.mesh = this.modelTemplate.mesh!
-        this.skeleton = this.modelTemplate.skeleton!
-        this.animation = this.modelTemplate.animation!
+        const modelTemplate = MonsterLoader.getMonsterClone(monsterType)
+        this.mesh = modelTemplate.mesh!
+        this.skeleton = modelTemplate.skeleton!
+        this.animation = modelTemplate.animation!
         this.type = monsterType
     }
 

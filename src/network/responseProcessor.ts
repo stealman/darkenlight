@@ -11,6 +11,7 @@ export const ResponseProcessor = {
             switch (msg.t) {
                 case 2: await this.loginResponse(msg); break
                 case 3: this.addMonster(msg); break
+                case 4: this.monsterMove(msg); break
             }
         }
     },
@@ -26,5 +27,10 @@ export const ResponseProcessor = {
     addMonster(msg) {
         const data = msg.d
         MonsterManager.addMonster(data.id, data.tp, { x: data.x, z: data.z }, data.hp)
+    },
+
+    monsterMove(msg) {
+        const data = msg.d
+        MonsterManager.monsterMove(data[0], { x: data[1], z: data[2] }, { x: data[3], z: data[4] }, data[5])
     }
 }

@@ -8,6 +8,7 @@
       <span id="fpsLabel" style="z-index: 100; font-size: 20px; color: #aaa; position: absolute; left: 10px; top: 10px;">FPS: </span>
       <span id="posLabel" style="z-index: 100; font-size: 20px; color: #aaa; position: absolute; left: 10px; top: 30px;">POS: </span>
       <button id="fullScreenBtn" style="cursor: pointer; text-decoration: underline; font-size: 18px; color: #aaa; position: absolute; left: 10px; top: 160px;" @click="this.requestFullscreen()">Fullscreen</button>
+      <button id="freezeBtn" style="cursor: pointer; text-decoration: underline; font-size: 18px; color: #aaa; position: absolute; left: 10px; top: 220px;" @click="this.freezeActiveMesh()">Freeze</button>
   </div>
 </template>
 
@@ -33,7 +34,8 @@ export default {
             Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 )
             //Settings.shadows = !Settings.touchEnabled
             Settings.debug = !Settings.touchEnabled
-            // Settings.closeView = true
+            Settings.debug = true
+                // Settings.closeView = true
             //Settings.shadows = false
             // console.log(Settings.shadows)
 
@@ -51,6 +53,11 @@ export default {
     requestFullscreen() {
       Renderer.requestFullscreen()
       document.getElementById("fullScreenBtn").style.display = "none"
+    },
+
+    freezeActiveMesh() {
+        console.log("Freeze")
+      Renderer.scene.freezeActiveMeshes()
     }
   }
 }

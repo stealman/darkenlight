@@ -20,7 +20,7 @@ export const MonsterManager = {
         } else {
             const monsterType = MonsterCodebook.getMonsterTypeById(type)
             const monsterModel = new MonsterModel(monsterType)
-            const monster = new Monster(id, monsterType, monsterModel, position.x, position.z)
+            const monster = new Monster(id, monsterType, monsterModel, position.x, position.z, hp)
 
             monsterModel.parent = monster
             monsterModel.initializeBonesAndAnimations()
@@ -29,6 +29,16 @@ export const MonsterManager = {
             monsterModel.assignHelmet(3, 1)
 
             this.monsters.set(id, monster)
+        }
+    },
+
+    monsterMove(id: number, position: { x: number, z: number }, target: { x: number, z: number }, speed: number) {
+        if (this.monsters.has(id)) {
+            const mob = this.monsters.get(id)
+            mob.runSpeed = speed
+            mob.xPos = position.x
+            mob.zPos = position.z
+            mob.setTargetPoint(new Vector3(target.x, 0, target.z))
         }
     },
 

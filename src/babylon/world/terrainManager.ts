@@ -33,6 +33,7 @@ export const TerrainManager = {
         plane.material = Materials.waterMaterial
         plane.position.y = 1
         plane.isPickable = false
+        plane.alwaysSelectAsActiveMesh = true
 
         for (let i = 1.25; i <= 4.75; i += 0.25) {
             plane.createInstance('plane' + i).position.y = i
