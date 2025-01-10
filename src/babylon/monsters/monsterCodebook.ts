@@ -16,9 +16,13 @@ export const MonsterCodebook = {
     },
 
     initSkeleton(model: MonsterModel) {
-        model.helmetNode.attachToBone(model.skeleton.bones.find(b => b.id === "Bone.001"), model.mesh)
-        model.lhandNode.attachToBone(model.skeleton.bones.find(b => b.id === "Bone.005"), model.mesh)
-        model.rhandNode.attachToBone(model.skeleton.bones.find(b => b.id === "Bone.008"), model.mesh)
+        model.headBone = model.skeleton.bones.find(b => b.id === "Bone.001")
+        model.lhandBone = model.skeleton.bones.find(b => b.id === "Bone.005")
+        model.rhandBone = model.skeleton.bones.find(b => b.id === "Bone.008")
+
+        model.headBoneW = model.template.walkSkeleton.bones.find(b => b.id === "Bone.001")!
+        model.lhandBoneW = model.template.walkSkeleton.bones.find(b => b.id === "Bone.005")!
+        model.rhandBoneW = model.template.walkSkeleton.bones.find(b => b.id === "Bone.008")!
 
         const animations = [
             { name: "Idle", startFrame: 0, endFrame: 75 },

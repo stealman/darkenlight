@@ -1,14 +1,14 @@
 import {
-    AnimationGroup,
-    Mesh,
-    Skeleton, TransformNode, Vector3,
+    AnimationGroup, Bone, Matrix,
+    Mesh, Quaternion,
+    Skeleton, Vector3,
 } from '@babylonjs/core'
 import { Monster } from '@/babylon/monsters/monster'
 import { MonsterLoader, MonsterTemplate } from '@/babylon/monsters/monsterLoader'
 import { MonsterCodebook, MonsterType } from '@/babylon/monsters/monsterCodebook'
-import { WearableManager } from '@/babylon/item/wearableManager'
 import { Data } from '@/data/globalData'
 import { MeshAnimation } from '@/babylon/animations/animation'
+import { EquipItem, WearableManager } from '@/babylon/item/wearableManager'
 
 export class MonsterModel {
     parent: Monster
@@ -23,13 +23,22 @@ export class MonsterModel {
 
     skeleton: Skeleton
     animation: AnimationGroup
-    helmetNode: TransformNode = new TransformNode("helmetNode")
-    lhandNode: TransformNode = new TransformNode("lhandNode")
-    rhandNode: TransformNode = new TransformNode("rhandNode")
 
     idleAnim: MeshAnimation | undefined
     walkAnim: MeshAnimation | undefined
     runningAnims: Set<MeshAnimation>
+
+    equipSet: Set<EquipItem> = new Set()
+
+    rhandBone: Bone
+    lhandBone: Bone
+    headBone: Bone
+    rhandBoneW: Bone
+    lhandBoneW: Bone
+    headBoneW: Bone
+
+    rotationQuaternion: Quaternion
+    worldMatrix: Matrix
 
     constructor(monsterType: MonsterType) {
         this.type = monsterType
@@ -46,15 +55,28 @@ export class MonsterModel {
     }
 
     assignSword(type, materialId, scale = new Vector3(1, 1, 1)) {
-        WearableManager.assignSword(this.rhandNode, type, materialId, scale)
+        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(2), this, this.rhandBone, this.rhandBoneW, scale))
     }
 
     assignHelmet(type, materialId, scale = new Vector3(1, 1, 1)) {
-        WearableManager.assignHelmet(this.helmetNode, type, materialId, scale)
+        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(1), this, this.headBone, this.headBoneW, scale))
+    }
+
+    addEquippedItem(item: EquipItem) {
+        this.equipSet.add(item)
+        WearableManager.addEquippedItem(item)
     }
 
     onFrame(timeRate: number) {
         this.resolveMovement(timeRate)
+
+        this.rotationQuaternion = new Quaternion()
+        this.worldMatrix = this.mesh.getWorldMatrix();
+        this.worldMatrix.decompose(new Vector3(), this.rotationQuaternion, new Vector3());
+
+        this.equipSet.forEach(item => {
+            item.onFrame()
+        })
     }
 
     onAnimFrame(animFrame: number) {
@@ -76,6 +98,9 @@ export class MonsterModel {
 
         this.resolveModelYpos(timeRate)
         this.resolveModelRotation(timeRate)
+
+        // Actualize the world matrix immediately for equpped items to move with the model correctly
+        this.mesh.computeWorldMatrix(true)
     }
 
     /**
@@ -112,12 +137,18 @@ export class MonsterModel {
 
     doWalk() {
         this.mesh.skeleton = this.template.walkSkeleton
+        this.equipSet.forEach(item => {
+            item.setWalking(true)
+        })
         this.runningAnims.clear()
     }
 
     doIdle() {
         this.mesh.skeleton = this.skeleton
-        this.transitionToAnimation(this.idleAnim!, true, true, 1.0)
+        this.equipSet.forEach(item => {
+            item.setWalking(false)
+        })
+        // this.transitionToAnimation(this.idleAnim!, true, true, 1.0)
     }
 
     transitionToAnimation(target: MeshAnimation, fadeIn: boolean = false, loop = false, speed = 1.0) {

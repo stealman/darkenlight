@@ -37,7 +37,7 @@ export const Renderer = {
     fps: 0 as number,
     frame: 0 as number,
 
-    // Animations run 40 FPS
+    // Animations run 25 FPS
     animationFrameTime: 40 as number,
     animationSpeedRatio: 1 as number,
     animationFrame: 0 as number,
@@ -147,6 +147,7 @@ export const Renderer = {
 
         if (this.frame > 1) {
             MyPlayer.onFrame(timeRate, actualTime)
+            MonsterManager.onFrame(timeRate, actualTime)
 
             if (actualTime - this.lastAnimationFrameTime >= this.animationFrameTime) {
                 let timeExceeded: number = 0
@@ -162,7 +163,6 @@ export const Renderer = {
                 this.animationFrame++
             }
 
-            MonsterManager.onFrame(timeRate, actualTime)
             WearableManager.onFrame()
         }
 

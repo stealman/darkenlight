@@ -11,6 +11,7 @@ import { Data } from '@/data/globalData'
 export const TerrainManager = {
     terrainBlock1: null as Mesh,
     terrainPlane: null as Mesh,
+    waterPlane: null as Mesh,
 
     initialize (scene) {
 
@@ -29,14 +30,14 @@ export const TerrainManager = {
         }
 
         // Water planes
-        const plane = Builder.createHorizontalPlane(scene, WorldRenderer.worldParentNode,256, 0)
-        plane.material = Materials.waterMaterial
-        plane.position.y = 1
-        plane.isPickable = false
-        plane.alwaysSelectAsActiveMesh = true
+        this.waterPlane = Builder.createHorizontalPlane(scene, WorldRenderer.worldParentNode,256, 0)
+        this.waterPlane.material = Materials.waterMaterial
+        this.waterPlane.position.y = 1
+        this.waterPlane.isPickable = false
+        this.waterPlane.alwaysSelectAsActiveMesh = true
 
         for (let i = 1.25; i <= 4.75; i += 0.25) {
-            plane.createInstance('plane' + i).position.y = i
+            this.waterPlane.createInstance('plane' + i).position.y = i
         }
     },
 

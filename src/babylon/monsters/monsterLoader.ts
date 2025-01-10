@@ -42,8 +42,8 @@ export const MonsterLoader = {
         return MonsterTemplates[mobType.name].clone(mobType.name)
     },
 
-    onAnimFrame (animFrrame: number) {
-        MonsterTemplates.Skeleton.onAnimFrame(animFrrame)
+    onAnimFrame (animFrame: number) {
+        MonsterTemplates.Skeleton.onAnimFrame(animFrame)
     }
 }
 

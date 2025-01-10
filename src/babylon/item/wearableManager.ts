@@ -1,27 +1,43 @@
 import {
+    Bone, Matrix,
     Mesh,
     Quaternion,
     Scene,
     SceneLoader,
     SolidParticle,
-    SolidParticleSystem,
+    SolidParticleSystem, Vector2,
     Vector3, Vector4,
 } from '@babylonjs/core'
 import { Materials } from '@/babylon/materials'
+import { MonsterModel } from '@/babylon/monsters/monsterModel'
+import { CustomMaterial } from '@babylonjs/materials'
 
 export const WearableManager = {
     helmetManager: null as WearableItemManager,
     armorManager: null as WearableItemManager,
     pauldronManager: null as WearableItemManager,
     legManager: null as WearableItemManager,
-
     swordManager: null as WearableItemManager,
 
+    itemTypes: new Map<number, EquipItemType>(),
+    equippedItems: new Map<EquipItemType, Set<EquipItem>>(),
+
+    colorVec: new Vector2(1, 0),
+
     async initialize(scene: Scene) {
+        this.itemTypes.set(1, new EquipItemType(1, "helm-skeleton"))
+        let material = Materials.getCustomMaterialFrom(scene, '/assets/models', '/equip/plate.png', 1 / 2, 1, false)
+        await this.itemTypes.get(1)!.initializeMesh(scene, "helm1.babylon", material, new Vector3(0, 0.45, 0), new Vector3(0, Math.PI / 2, 0), new Vector3(0.42, 0.42, 0.42))
+
+        this.itemTypes.set(2, new EquipItemType(2, "sword"))
+        material = Materials.getCustomMaterialFrom(scene, '/assets/models', '/equip/weapons/swords.png', 1 / 2, 1, false)
+        await this.itemTypes.get(2)!.initializeMesh(scene, "weapons/sword1.babylon", material, new Vector3(0.01, 0.1, 0), new Vector3(0, Math.PI / 2, Math.PI / 2), new Vector3(5, 5, 5))
+
+
         const helmModels = [
             new WearableItemModel("male-plate-helm1", 1, "helm1.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)),
             new WearableItemModel("male-plate-helm2", 2, "helm2.babylon", new Vector3(0.46, 0.46, 0.46), new Vector3(0, 0.42, 0)),
-            new WearableItemModel("skeleton-helm", 3, "helm1.babylon", new Vector3(0.42, 0.42, 0.42), new Vector3(0, 0.44, 0), new Vector3(0, Math.PI / 2, 0))]
+            ]
 
         this.helmetManager = new WearableItemManager("helm", scene, helmModels, "/assets/models/equip/plate.png")
         await this.helmetManager.initialize(scene)
@@ -73,12 +89,46 @@ export const WearableManager = {
         this.swordManager.assignItem(node, modelId, SwordMaterials.longsword_mythril, scale)
     },
 
+    addEquippedItem(item: EquipItem) {
+        if (!this.equippedItems.has(item.type)) {
+            this.equippedItems.set(item.type, new Set())
+        }
+        this.equippedItems.get(item.type)!.add(item)
+        item.type.updateCount(this.equippedItems.get(item.type)!.size)
+    },
+
+    removeEquippedItem(item: EquipItem) {
+        this.equippedItems.get(item.type)?.delete(item)
+        item.type.updateCount(this.equippedItems.get(item.type)!.size)
+    },
+
     onFrame() {
         this.helmetManager.onFrame()
         this.armorManager.onFrame()
         this.pauldronManager.onFrame()
         this.legManager.onFrame()
         this.swordManager.onFrame()
+
+        // For each item type, if at least one item is equipped, update the instance buffer
+        this.equippedItems.forEach((items, type) => {
+            if (type.count > 0) {
+
+                let i = 0;
+
+                // Every item has its position and rotation set in its onFrame() method
+                items.forEach((item) => {
+                    const posMatrix = Matrix.Translation(item.position.x, item.position.y, item.position.z);
+                    const scaleMatrix = Matrix.Scaling(item.scale.x, item.scale.y, item.scale.z);
+                    scaleMatrix.multiply(Matrix.FromQuaternionToRef(item.quaternion, new Matrix()).multiply(posMatrix)).copyToArray(type.instanceBuffer, i * 16);
+
+                    type.uvBuffer[i * 2] = this.colorVec.x;
+                    type.uvBuffer[i * 2 + 1] = this.colorVec.y
+                    i++;
+                })
+                type.mesh.thinInstanceSetBuffer("matrix", type.instanceBuffer);
+                type.mesh.thinInstanceSetBuffer("uvc", type.uvBuffer, 2)
+            }
+        })
     }
 }
 
@@ -235,4 +285,82 @@ const PlateArmorMaterials = [
 const SwordMaterials = {
     longsword_iron : new Vector4(0, 5/6, 0.5, 1),
     longsword_mythril : new Vector4(0.5, 5/6, 1, 1),
+}
+
+export class EquipItem {
+    parent: MonsterModel = null as MonsterModel
+    type: EquipItemType
+
+    position: Vector3
+    quaternion: Quaternion
+    bone: Bone
+    walkingBone: Bone
+    activeBone: Bone
+    scale: Vector3
+
+    localPosition: Vector3 = Vector3.Zero()
+    boneRotationQuaternion: Quaternion = Quaternion.Identity()
+    localScale: Vector3 = Vector3.One()
+
+    constructor(type: EquipItemType, parent, bone: Bone, walkingBone: Bone, scale: Vector3 = Vector3.One()) {
+        this.type = type
+        this.parent = parent
+        this.bone = bone
+        this.walkingBone = walkingBone
+        this.activeBone = this.bone
+        this.scale = scale
+    }
+
+    onFrame() {
+        this.activeBone.computeWorldMatrix(true);
+        this.activeBone.getWorldMatrix().decompose(this.localScale, this.boneRotationQuaternion, this.localPosition);
+
+        this.quaternion = this.parent.rotationQuaternion.multiply(this.boneRotationQuaternion);
+        this.position = Vector3.TransformCoordinates(this.localPosition, this.parent.worldMatrix);
+    }
+
+    setWalking(isWalking: boolean) {
+        this.activeBone = isWalking ? this.walkingBone : this.bone
+    }
+}
+
+export class EquipItemType {
+    id: number
+    name: string
+    mesh: Mesh
+    count: number = 0
+
+    instanceBuffer: Float32Array
+    uvBuffer: Float32Array
+
+    constructor(id: number, name: string) {
+        this.id = id
+        this.name = name
+    }
+
+    async initializeMesh(scene: Scene, fileName: string, material: CustomMaterial, position: Vector3 = Vector3.Zero(), rotation: Vector3 = Vector3.Zero(), scale: Vector3 = Vector3.One()) {
+        const result = await SceneLoader.ImportMeshAsync("", "/assets/models/equip/", fileName, scene);
+        const source = result.meshes[0] as Mesh
+
+        source.position = position
+        source.rotation = rotation
+        source.scaling = scale
+
+        this.mesh = Mesh.MergeMeshes([source], true)!
+        this.mesh.material = material
+        this.mesh.setEnabled(true)
+        this.mesh.alwaysSelectAsActiveMesh = true
+    }
+
+    updateCount(count: number) {
+        this.count = count
+        this.instanceBuffer = new Float32Array(16 * count)
+        this.uvBuffer = new Float32Array(2 * count)
+
+        if (count === 0) {
+            this.mesh.setEnabled(false)
+        } else if (!this.mesh.isEnabled()) {
+            this.mesh.setEnabled(true)
+        }
+    }
 }

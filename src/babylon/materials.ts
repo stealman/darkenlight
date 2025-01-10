@@ -46,8 +46,8 @@ export const Materials = {
         return this.getCustomMaterial(scene, 'symetric_materials_1.png', 1 / 8, 1 / 8, true)
     },
 
-    getCustomMaterial(scene: Scene, textturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
-        const diffuseTexture = new Texture(this.BASE_PATH + textturePath, scene)
+    getCustomMaterialFrom(scene: Scene, basePath: string, texturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
+        const diffuseTexture = new Texture(basePath + texturePath, scene)
         diffuseTexture.hasAlpha = hasAlpha
         diffuseTexture.uScale = uScale
         diffuseTexture.vScale = vScale
@@ -63,6 +63,10 @@ export const Materials = {
 
         mat.freeze()
         return mat
+    },
+
+    getCustomMaterial(scene: Scene, texturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
+        return this.getCustomMaterialFrom(scene, this.BASE_PATH, texturePath, uScale, vScale, hasAlpha)
     },
 
     createWaterMaterial(scene: Scene): StandardMaterial {

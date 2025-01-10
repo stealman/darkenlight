@@ -55,6 +55,7 @@ export const WorldRenderer = {
 
     updateWorldParentNode() {
         this.worldParentNode!.position = new Vector3(-Data.myChar.getOffset().x, -Data.myChar.modelYpos, -Data.myChar.getOffset().z)
+        TerrainManager.waterPlane._unFreeze()
     }
 }
 
