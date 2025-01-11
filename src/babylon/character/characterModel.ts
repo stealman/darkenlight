@@ -8,7 +8,7 @@ import {
 import { Settings } from '@/settings/settings'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { Materials } from '@/babylon/materials'
-import { WearableManager } from '@/babylon/item/wearableManager'
+import { wearableManager } from '@/babylon/item/wearableManager'
 import { PlayerData } from '@/data/playerData'
 import { AnimTransition } from '@/babylon/animations/animation'
 
@@ -135,31 +135,31 @@ export class CharacterModel {
     }
 
     assignHelmet(type, materialId) {
-        WearableManager.assignHelmet(this.headNode, type, materialId);
+        wearableManager.assignHelmet(this.headNode, type, materialId);
     }
 
     assignArmor(type, materialId) {
-        WearableManager.assignArmor(this.torsoNode, type, materialId);
+        wearableManager.assignArmor(this.torsoNode, type, materialId);
     }
 
     assignLeftPauldron(type, materialId) {
-        WearableManager.assignPauldron(this.rarmNode, type, materialId);
+        wearableManager.assignPauldron(this.rarmNode, type, materialId);
     }
 
     assignRightPauldron(type, materialId) {
-        WearableManager.assignPauldron(this.larmNode, type, materialId);
+        wearableManager.assignPauldron(this.larmNode, type, materialId);
     }
 
     assignLeftLeg(type, materialId) {
-        WearableManager.assignLeg(this.llegNode, type, materialId);
+        wearableManager.assignLeg(this.llegNode, type, materialId);
     }
 
     assignRightLeg(type, materialId) {
-        WearableManager.assignLeg(this.rlegNode, type, materialId);
+        wearableManager.assignLeg(this.rlegNode, type, materialId);
     }
 
     assignSword(type, materialId) {
-        WearableManager.assignSword(this.rhandNode, type, materialId);
+        wearableManager.assignSword(this.rhandNode, type, materialId);
     }
 
     startWalkAnimation() {

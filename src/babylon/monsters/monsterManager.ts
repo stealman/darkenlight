@@ -26,7 +26,7 @@ export const MonsterManager = {
             monsterModel.initializeBonesAndAnimations()
 
             monsterModel.assignSword(1, 1, new Vector3(0.75, 0.75, 0.75))
-            monsterModel.assignHelmet(3, 1)
+            monsterModel.assignHelmet(1751, 5)
 
             this.monsters.set(id, monster)
         }

@@ -18,7 +18,7 @@ import { MiniMap } from '@/utils/minimap'
 import { Materials } from '@/babylon/materials'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { ViewportManager } from '@/utils/viewport'
-import { WearableManager } from '@/babylon/item/wearableManager'
+import { wearableManager } from '@/babylon/item/wearableManager'
 import { MonsterManager } from '@/babylon/monsters/monsterManager'
 import { Data } from '@/data/globalData'
 import { MonsterLoader, MonsterTemplates } from '@/babylon/monsters/monsterLoader'
@@ -76,8 +76,8 @@ export const Renderer = {
 
         AudioManager.initialize(this.scene)
         MiniMap.initialize()
-        await WearableManager.initialize(this.scene)
-        console.log("WearableManager initialized")
+        await wearableManager.initialize(this.scene)
+        console.log("wearableManager initialized")
 
         await MyPlayer.initialize(this.scene)
         console.log("MyPlayer initialized")
@@ -163,7 +163,7 @@ export const Renderer = {
                 this.animationFrame++
             }
 
-            WearableManager.onFrame()
+            wearableManager.onFrame()
         }
 
         if (this.frame % 10 === 0) {

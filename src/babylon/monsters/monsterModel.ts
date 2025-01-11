@@ -8,7 +8,7 @@ import { MonsterLoader, MonsterTemplate } from '@/babylon/monsters/monsterLoader
 import { MonsterCodebook, MonsterType } from '@/babylon/monsters/monsterCodebook'
 import { Data } from '@/data/globalData'
 import { MeshAnimation } from '@/babylon/animations/animation'
-import { EquipItem, WearableManager } from '@/babylon/item/wearableManager'
+import { EquipItem, wearableManager } from '@/babylon/item/wearableManager'
 
 export class MonsterModel {
     parent: Monster
@@ -54,17 +54,17 @@ export class MonsterModel {
         MonsterCodebook.initializeNodesAndAnimations(this)
     }
 
-    assignSword(type, materialId, scale = new Vector3(1, 1, 1)) {
-        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(2), this, this.rhandBone, this.rhandBoneW, scale))
+    assignSword(type, matIndex, scale = new Vector3(1, 1, 1)) {
+        this.addEquippedItem(new EquipItem(wearableManager.itemTypes.get(type), matIndex, this, this.rhandBone, this.rhandBoneW, scale))
     }
 
-    assignHelmet(type, materialId, scale = new Vector3(1, 1, 1)) {
-        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(1), this, this.headBone, this.headBoneW, scale))
+    assignHelmet(type, matIndex, scale = new Vector3(1, 1, 1)) {
+        this.addEquippedItem(new EquipItem(wearableManager.itemTypes.get(type), matIndex, this, this.headBone, this.headBoneW, scale))
     }
 
     addEquippedItem(item: EquipItem) {
         this.equipSet.add(item)
-        WearableManager.addEquippedItem(item)
+        wearableManager.addEquippedItem(item)
     }
 
     onFrame(timeRate: number) {

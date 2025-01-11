@@ -51,5 +51,9 @@ export const Utils = {
         if (!plusMovePossible && !minusMovePossible) {
             return null
         }
+    },
+
+    getRandomFloor(max) {
+        return Math.floor(Math.random() * max)
     }
 }

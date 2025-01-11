@@ -1,4 +1,4 @@
-import { Matrix, Vector2 } from '@babylonjs/core'
+import { Matrix, Vector2, Vector3 } from '@babylonjs/core'
 
 export const BabylonUtils = {
     createPositionBuffer(matrices: Matrix[]): Float32Array {
@@ -20,5 +20,9 @@ export const BabylonUtils = {
         })
 
         return buffer
+    },
+
+    getSymVector(s: number) {
+        return new Vector3(s, s, s)
     }
 }

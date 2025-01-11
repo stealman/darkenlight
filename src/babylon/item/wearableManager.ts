@@ -11,8 +11,13 @@ import {
 import { Materials } from '@/babylon/materials'
 import { MonsterModel } from '@/babylon/monsters/monsterModel'
 import { CustomMaterial } from '@babylonjs/materials'
+import { CbWeaponsManager } from '@/babylon/item/codebook/cbWeapons'
+import { CbArmorsManager } from '@/babylon/item/codebook/cbArmors'
+import { CbEquipItemData } from '@/babylon/item/codebook/cbEquipItemData'
 
-export const WearableManager = {
+export const BASE_EQUIP_MATERIAL_PATH = "/assets/models/equip/"
+
+export const wearableManager = {
     helmetManager: null as WearableItemManager,
     armorManager: null as WearableItemManager,
     pauldronManager: null as WearableItemManager,
@@ -22,16 +27,11 @@ export const WearableManager = {
     itemTypes: new Map<number, EquipItemType>(),
     equippedItems: new Map<EquipItemType, Set<EquipItem>>(),
 
-    colorVec: new Vector2(1, 0),
+    colorVec: new Vector2(0, 0),
 
     async initialize(scene: Scene) {
-        this.itemTypes.set(1, new EquipItemType(1, "helm-skeleton"))
-        let material = Materials.getCustomMaterialFrom(scene, '/assets/models', '/equip/plate.png', 1 / 2, 1, false)
-        await this.itemTypes.get(1)!.initializeMesh(scene, "helm1.babylon", material, new Vector3(0, 0.45, 0), new Vector3(0, Math.PI / 2, 0), new Vector3(0.42, 0.42, 0.42))
-
-        this.itemTypes.set(2, new EquipItemType(2, "sword"))
-        material = Materials.getCustomMaterialFrom(scene, '/assets/models', '/equip/weapons/swords.png', 1 / 2, 1, false)
-        await this.itemTypes.get(2)!.initializeMesh(scene, "weapons/sword1.babylon", material, new Vector3(0.01, 0.1, 0), new Vector3(0, Math.PI / 2, Math.PI / 2), new Vector3(5, 5, 5))
+        await CbWeaponsManager.initMelee(this.itemTypes, scene)
+        await CbArmorsManager.initHelmets(this.itemTypes, scene)
 
 
         const helmModels = [
@@ -121,8 +121,8 @@ export const WearableManager = {
                     const scaleMatrix = Matrix.Scaling(item.scale.x, item.scale.y, item.scale.z);
                     scaleMatrix.multiply(Matrix.FromQuaternionToRef(item.quaternion, new Matrix()).multiply(posMatrix)).copyToArray(type.instanceBuffer, i * 16);
 
-                    type.uvBuffer[i * 2] = this.colorVec.x;
-                    type.uvBuffer[i * 2 + 1] = this.colorVec.y
+                    type.uvBuffer[i * 2] = item.matVector.x
+                    type.uvBuffer[i * 2 + 1] = item.matVector.y
                     i++;
                 })
                 type.mesh.thinInstanceSetBuffer("matrix", type.instanceBuffer);
@@ -290,6 +290,7 @@ const SwordMaterials = {
 export class EquipItem {
     parent: MonsterModel = null as MonsterModel
     type: EquipItemType
+    matVector: Vector2
 
     position: Vector3
     quaternion: Quaternion
@@ -302,13 +303,18 @@ export class EquipItem {
     boneRotationQuaternion: Quaternion = Quaternion.Identity()
     localScale: Vector3 = Vector3.One()
 
-    constructor(type: EquipItemType, parent, bone: Bone, walkingBone: Bone, scale: Vector3 = Vector3.One()) {
+    constructor(type: EquipItemType, matIndex: number, parent, bone: Bone, walkingBone: Bone, scale: Vector3 = Vector3.One()) {
         this.type = type
         this.parent = parent
         this.bone = bone
         this.walkingBone = walkingBone
         this.activeBone = this.bone
         this.scale = scale
+
+        const matRow = (type.cbData.matsY * 2) - ((Math.floor(matIndex / type.cbData.matsX) * 2) + 1.5)
+        const matCol = ((matIndex % type.cbData.matsX) * 2) + 0.5
+        this.matVector = new Vector2(matCol, matRow)
+        console.log(this.matVector)
     }
 
     onFrame() {
@@ -333,13 +339,15 @@ export class EquipItemType {
     instanceBuffer: Float32Array
     uvBuffer: Float32Array
 
-    constructor(id: number, name: string) {
-        this.id = id
-        this.name = name
+    cbData: CbEquipItemData
+
+    constructor(data: CbEquipItemData) {
+        this.id = data.id
+        this.cbData = data
     }
 
     async initializeMesh(scene: Scene, fileName: string, material: CustomMaterial, position: Vector3 = Vector3.Zero(), rotation: Vector3 = Vector3.Zero(), scale: Vector3 = Vector3.One()) {
-        const result = await SceneLoader.ImportMeshAsync("", "/assets/models/equip/", fileName, scene);
+        const result = await SceneLoader.ImportMeshAsync("", "/assets/models/equip/", fileName + ".babylon", scene);
         const source = result.meshes[0] as Mesh
 
         source.position = position
