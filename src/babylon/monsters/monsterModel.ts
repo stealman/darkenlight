@@ -4,15 +4,17 @@ import {
     Skeleton, Vector3,
 } from '@babylonjs/core'
 import { Monster } from '@/babylon/monsters/monster'
-import { MonsterLoader, MonsterTemplate } from '@/babylon/monsters/monsterLoader'
-import { MonsterCodebook, MonsterType } from '@/babylon/monsters/monsterCodebook'
+import { MonsterLoader } from '@/babylon/monsters/monsterLoader'
+import { MonsterCodebook, MonsterType } from '@/babylon/monsters/codebook/monsterCodebook'
 import { Data } from '@/data/globalData'
 import { MeshAnimation } from '@/babylon/animations/animation'
-import { EquipItem, wearableManager } from '@/babylon/item/wearableManager'
+import { EquipItem, WearableManager } from '@/babylon/item/wearableManager'
+import { MonsterTemplate } from '@/babylon/monsters/codebook/monsterTemplates'
 
 export class MonsterModel {
     parent: Monster
     type: MonsterType
+    initialized: boolean = false
     node: Mesh
     mesh: Mesh
 
@@ -26,13 +28,15 @@ export class MonsterModel {
 
     idleAnim: MeshAnimation | undefined
     walkAnim: MeshAnimation | undefined
-    runningAnims: Set<MeshAnimation>
+    activeAnims: Set<MeshAnimation>
 
     equipSet: Set<EquipItem> = new Set()
 
+    chestBone: Bone
     rhandBone: Bone
     lhandBone: Bone
     headBone: Bone
+    chestBoneW: Bone
     rhandBoneW: Bone
     lhandBoneW: Bone
     headBoneW: Bone
@@ -40,31 +44,41 @@ export class MonsterModel {
     rotationQuaternion: Quaternion
     worldMatrix: Matrix
 
-    constructor(monsterType: MonsterType) {
+    constructor(monsterType: MonsterType, parent: Monster) {
+        this.parent = parent
         this.type = monsterType
-        this.template = MonsterLoader.getMonsterClone(monsterType)
+        this.activeAnims = new Set<MeshAnimation>()
+    }
+
+    /**
+     * Initialize the model - for monsters out of view this is done only when they enter the view for the first time
+     */
+    initializeModel() {
+        this.template = MonsterLoader.getMonsterClone(this.type)
         this.node = this.template.node
         this.mesh = this.template.mesh
         this.skeleton = this.template.skeleton
         this.animation = this.template.animation
-        this.runningAnims = new Set<MeshAnimation>()
+
+        MonsterCodebook.initializeEquipAndAnimations(this)
+        this.initialized = true
     }
 
-    initializeBonesAndAnimations() {
-        MonsterCodebook.initializeNodesAndAnimations(this)
+    assignRhand(type, matIndex, scale = new Vector3(1, 1, 1)) {
+        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(type), matIndex, this, this.rhandBone, this.rhandBoneW, scale))
     }
 
-    assignSword(type, matIndex, scale = new Vector3(1, 1, 1)) {
-        this.addEquippedItem(new EquipItem(wearableManager.itemTypes.get(type), matIndex, this, this.rhandBone, this.rhandBoneW, scale))
+    assignChest(type, matIndex, scale = new Vector3(1, 1, 1)) {
+        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(type), matIndex, this, this.chestBone, this.chestBoneW, scale))
     }
 
     assignHelmet(type, matIndex, scale = new Vector3(1, 1, 1)) {
-        this.addEquippedItem(new EquipItem(wearableManager.itemTypes.get(type), matIndex, this, this.headBone, this.headBoneW, scale))
+        this.addEquippedItem(new EquipItem(WearableManager.itemTypes.get(type), matIndex, this, this.headBone, this.headBoneW, scale))
     }
 
     addEquippedItem(item: EquipItem) {
         this.equipSet.add(item)
-        wearableManager.addEquippedItem(item)
+        WearableManager.addEquippedItem(item)
     }
 
     onFrame(timeRate: number) {
@@ -80,13 +94,13 @@ export class MonsterModel {
     }
 
     onAnimFrame(animFrame: number) {
-        if (this.runningAnims.size > 0) {
+        if (this.activeAnims.size > 0) {
             this.skeleton.prepare()
 
-            this.runningAnims.forEach(anim => {
+            this.activeAnims.forEach(anim => {
                 anim.onAnimFrame(animFrame)
                 if (!anim.running) {
-                    this.runningAnims.delete(anim)
+                    this.activeAnims.delete(anim)
                 }
             })
         }
@@ -135,12 +149,28 @@ export class MonsterModel {
         this.modelRotation = this.node.rotation.y;
     }
 
+    addToView() {
+        if (!this.initialized) this.initializeModel()
+
+        MonsterLoader.monsterTemplates.get(this.template.id)?.activateClone(this.template)
+        this.equipSet.forEach(item => {
+            WearableManager.addEquippedItem(item)
+        })
+    }
+
+    removeFromView() {
+        MonsterLoader.monsterTemplates.get(this.template.id)?.deactivateClone(this.template)
+        this.equipSet.forEach(item => {
+            WearableManager.removeEquippedItem(item)
+        })
+    }
+
     doWalk() {
         this.mesh.skeleton = this.template.walkSkeleton
         this.equipSet.forEach(item => {
             item.setWalking(true)
         })
-        this.runningAnims.clear()
+        this.activeAnims.clear()
     }
 
     doIdle() {
@@ -152,16 +182,16 @@ export class MonsterModel {
     }
 
     transitionToAnimation(target: MeshAnimation, fadeIn: boolean = false, loop = false, speed = 1.0) {
-        this.runningAnims.forEach(anim => {
+        this.activeAnims.forEach(anim => {
             if (anim !== target) {
                 anim.fadeOut()
             }
         })
 
-        if (!this.runningAnims.has(target!)) {
+        if (!this.activeAnims.has(target!)) {
             this.mesh.skeleton = this.skeleton
             target.start(fadeIn, speed, loop)
-            this.runningAnims.add(target)
+            this.activeAnims.add(target)
         }
     }
 }

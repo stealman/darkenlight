@@ -18,10 +18,10 @@ import { MiniMap } from '@/utils/minimap'
 import { Materials } from '@/babylon/materials'
 import { AudioManager } from '@/babylon/audio/audioManager'
 import { ViewportManager } from '@/utils/viewport'
-import { wearableManager } from '@/babylon/item/wearableManager'
+import { WearableManager } from '@/babylon/item/wearableManager'
 import { MonsterManager } from '@/babylon/monsters/monsterManager'
 import { Data } from '@/data/globalData'
-import { MonsterLoader, MonsterTemplates } from '@/babylon/monsters/monsterLoader'
+import { MonsterLoader } from '@/babylon/monsters/monsterLoader'
 
 /**
  * Main Renderer
@@ -76,7 +76,7 @@ export const Renderer = {
 
         AudioManager.initialize(this.scene)
         MiniMap.initialize()
-        await wearableManager.initialize(this.scene)
+        await WearableManager.initialize(this.scene)
         console.log("wearableManager initialized")
 
         await MyPlayer.initialize(this.scene)
@@ -91,7 +91,10 @@ export const Renderer = {
         this.light.parent = WorldRenderer.worldParentNode
 
         // Create the camera
-        const cameraPosition = new Vector3(-12, 12, -12)
+        let cameraPosition = new Vector3(-12, 12, -12)
+        if (Settings.touchEnabled) {
+            cameraPosition = new Vector3(-10, 12, -10)
+        }
         let cameraViewY = -2
         if (Settings.closeView) {
             cameraPosition.x = -6
@@ -147,7 +150,7 @@ export const Renderer = {
 
         if (this.frame > 1) {
             MyPlayer.onFrame(timeRate, actualTime)
-            MonsterManager.onFrame(timeRate, actualTime)
+            MonsterManager.onFrame(timeRate, actualTime, this.frame)
 
             if (actualTime - this.lastAnimationFrameTime >= this.animationFrameTime) {
                 let timeExceeded: number = 0
@@ -155,15 +158,13 @@ export const Renderer = {
                     timeExceeded = actualTime - this.lastAnimationFrameTime - this.animationFrameTime
                 }
 
-                MonsterTemplates.Skeleton.assetContainer?.skeletons.forEach((skeleton) => skeleton.prepare());
-
                 MonsterLoader.onAnimFrame(this.animationFrame)
                 MonsterManager.onAnimFrame(this.animationFrame)
                 this.lastAnimationFrameTime = actualTime - timeExceeded
                 this.animationFrame++
             }
 
-            wearableManager.onFrame()
+            WearableManager.onFrame()
         }
 
         if (this.frame % 10 === 0) {

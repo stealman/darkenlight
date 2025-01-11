@@ -53,7 +53,12 @@ export const Utils = {
         }
     },
 
-    getRandomFloor(max) {
-        return Math.floor(Math.random() * max)
+    rollDice(sides: number, fromZero: boolean = false) {
+        return Math.floor(Math.random() * sides) + (fromZero ? 0 : 1)
+    },
+
+    getRandomFromTo(min, max) {
+        if (min === max) return min
+        return this.rollDice((1 + max) - min, true) + min
     }
 }

@@ -38,6 +38,9 @@ export const ViewportManager = {
         }
 
         if (!ViewportManager.visibilityMatrix[x][z]) {
+            if (tolerance === 0) {
+                return false
+            }
 
             // Approximate both x and z to the zero by given tolerance and check again
             const xAppr = x < 0 ? x + tolerance : x - tolerance

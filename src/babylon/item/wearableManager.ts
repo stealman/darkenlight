@@ -17,7 +17,7 @@ import { CbEquipItemData } from '@/babylon/item/codebook/cbEquipItemData'
 
 export const BASE_EQUIP_MATERIAL_PATH = "/assets/models/equip/"
 
-export const wearableManager = {
+export const WearableManager = {
     helmetManager: null as WearableItemManager,
     armorManager: null as WearableItemManager,
     pauldronManager: null as WearableItemManager,
@@ -112,6 +112,7 @@ export const wearableManager = {
         // For each item type, if at least one item is equipped, update the instance buffer
         this.equippedItems.forEach((items, type) => {
             if (type.count > 0) {
+                // console.log(items.size)
 
                 let i = 0;
 
@@ -314,7 +315,6 @@ export class EquipItem {
         const matRow = (type.cbData.matsY * 2) - ((Math.floor(matIndex / type.cbData.matsX) * 2) + 1.5)
         const matCol = ((matIndex % type.cbData.matsX) * 2) + 0.5
         this.matVector = new Vector2(matCol, matRow)
-        console.log(this.matVector)
     }
 
     onFrame() {
@@ -356,7 +356,7 @@ export class EquipItemType {
 
         this.mesh = Mesh.MergeMeshes([source], true)!
         this.mesh.material = material
-        this.mesh.setEnabled(true)
+        this.mesh.setEnabled(false)
         this.mesh.alwaysSelectAsActiveMesh = true
     }
 
@@ -368,6 +368,7 @@ export class EquipItemType {
         if (count === 0) {
             this.mesh.setEnabled(false)
         } else if (!this.mesh.isEnabled()) {
+            this.mesh.alwaysSelectAsActiveMesh = true
             this.mesh.setEnabled(true)
         }
     }

@@ -33,9 +33,9 @@ export default {
             Settings.touchEnabled = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 ) || ( navigator.msMaxTouchPoints > 0 )
             Settings.shadows = !Settings.touchEnabled
             Settings.debug = !Settings.touchEnabled
-            Settings.debug = true
-                // Settings.closeView = true
-            //Settings.shadows = true
+            //Settings.debug = true
+            // Settings.closeView = true
+            Settings.shadows = true
             // console.log(Settings.shadows)
 
             GameManager.initialize(canvas)

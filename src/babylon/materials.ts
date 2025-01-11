@@ -16,6 +16,8 @@ export const Materials = {
     symetricBlockMaterial1: null as CustomMaterial,
     waterMaterial: null as StandardMaterial,
 
+    customMaterials: new Map<string, CustomMaterial>(),
+
     initialize(scene: Scene) {
         this.terrainMaterial = this.createTerrainMaterial1(scene)
         this.planeMaterial = this.createPlaneMaterial(scene)
@@ -25,7 +27,6 @@ export const Materials = {
 
     getBasicMaterial(scene: Scene, name: string, pathToDiffuse: string, hasAlpha: boolean = false, invertY: boolean = true): StandardMaterial {
         const mat = new StandardMaterial(name, scene)
-        mat.specularColor = Color3.Black()
         mat.emissiveColor = this.sceneEmissiveColor
 
         const diffuseTexture = new Texture(pathToDiffuse, scene, {invertY: invertY})
@@ -35,38 +36,44 @@ export const Materials = {
     },
 
     createTerrainMaterial1(scene: Scene): CustomMaterial {
-        return this.getCustomMaterial(scene, 'terrain_materials_1.png', 1 / 4, 1 / 4, false)
+        return this.getCustomMaterial(scene, "terrain_mats1", 'terrain_materials_1.png', 1 / 4, 1 / 4, false)
     },
 
     createPlaneMaterial(scene: Scene): StandardMaterial {
-        return this.getCustomMaterial(scene, 'plane_materials.png', 1 / 8, 1 / 8, false)
+        return this.getCustomMaterial(scene, "plane_mats", 'plane_materials.png', 1 / 8, 1 / 8, false)
     },
 
     createSymBlockMaterial1(scene: Scene): CustomMaterial {
-        return this.getCustomMaterial(scene, 'symetric_materials_1.png', 1 / 8, 1 / 8, true)
+        return this.getCustomMaterial(scene, "sym_block_mats", 'symetric_materials_1.png', 1 / 8, 1 / 8, true)
     },
 
-    getCustomMaterialFrom(scene: Scene, basePath: string, texturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
-        const diffuseTexture = new Texture(basePath + texturePath, scene)
-        diffuseTexture.hasAlpha = hasAlpha
-        diffuseTexture.uScale = uScale
-        diffuseTexture.vScale = vScale
+    getCustomMaterialFrom(scene: Scene, name: string, basePath: string, texturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
+        if (this.customMaterials.has(name)) {
+            return this.customMaterials.get(name)!
+        } else {
 
-        const mat = new CustomMaterial("", scene)
-        mat.diffuseTexture = diffuseTexture
-        mat.specularColor = Color3.Black()
-        mat.emissiveColor = this.sceneEmissiveColor
+            const diffuseTexture = new Texture(basePath + texturePath, scene)
+            diffuseTexture.hasAlpha = hasAlpha
+            diffuseTexture.uScale = uScale
+            diffuseTexture.vScale = vScale
 
-        mat.AddAttribute("uvc")
-        mat.Vertex_Definitions(`attribute vec2 uvc;`);
-        mat.Vertex_Before_PositionUpdated(`uvUpdated += uvc;`)
+            const mat = new CustomMaterial(name, scene)
+            mat.diffuseTexture = diffuseTexture
+            mat.specularColor = Color3.Black()
+            mat.emissiveColor = this.sceneEmissiveColor
 
-        mat.freeze()
-        return mat
+            mat.AddAttribute("uvc")
+            mat.Vertex_Definitions(`attribute vec2 uvc;`);
+            mat.Vertex_Before_PositionUpdated(`uvUpdated += uvc;`)
+
+            mat.freeze()
+            this.customMaterials.set(name, mat)
+            return mat
+        }
     },
 
-    getCustomMaterial(scene: Scene, texturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
-        return this.getCustomMaterialFrom(scene, this.BASE_PATH, texturePath, uScale, vScale, hasAlpha)
+    getCustomMaterial(scene: Scene, name: string, texturePath: string, uScale: number, vScale: number, hasAlpha: boolean): CustomMaterial {
+        return this.getCustomMaterialFrom(scene, name, this.BASE_PATH, texturePath, uScale, vScale, hasAlpha)
     },
 
     createWaterMaterial(scene: Scene): StandardMaterial {

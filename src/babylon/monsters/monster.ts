@@ -1,5 +1,5 @@
 import { MonsterModel } from '@/babylon/monsters/monsterModel'
-import { MonsterType } from '@/babylon/monsters/monsterCodebook'
+import { MonsterType } from '@/babylon/monsters/codebook/monsterCodebook'
 import { WorldData } from '@/babylon/world/worldData'
 import { Utils } from '@/utils/utils'
 import { Vector3 } from '@babylonjs/core'
@@ -11,18 +11,18 @@ export class Monster {
     targetPoint: Vector3 | null = null
 
     hp: number
-    runSpeed: number = 1.5
+    runSpeed: number
     rotationSpeed: number = 15
     xPos: number
     zPos: number
     yPos: number
 
     moveAngle: number | null = null
+    insideView: boolean = true
 
-    constructor(id: number, mobType: MonsterType, model: MonsterModel, xPos: number, zPos: number, hp: number) {
+    constructor(id: number, mobType: MonsterType, xPos: number, zPos: number, hp: number) {
         this.id = id
         this.mobType = mobType
-        this.model = model
         this.hp = hp
         this.xPos = xPos
         this.zPos = zPos
@@ -31,11 +31,16 @@ export class Monster {
 
     onFrame(timeRate: number, actualTime: number) {
         this.resolveMovement(timeRate)
-        this.model.onFrame(timeRate)
+
+        if (this.insideView) {
+            this.model.onFrame(timeRate)
+        }
     }
 
     onAnimFrame(animFrame: number) {
-        this.model.onAnimFrame(animFrame)
+        if (this.insideView) {
+            this.model.onAnimFrame(animFrame)
+        }
     }
 
     resolveMovement(timeRate: number) {
@@ -56,10 +61,9 @@ export class Monster {
         if (this.moveAngle != null) {
             this.xPos += (Math.cos(this.moveAngle + Math.PI / 4) * stepSize)
             this.zPos -= (Math.sin(this.moveAngle + Math.PI / 4) * stepSize)
-
-            this.model.doWalk()
+            if (this.model.initialized) this.model.doWalk()
         } else {
-            this.model.doIdle()
+            if (this.model.initialized) this.model.doIdle()
         }
 
         this.yPos = this.calculateYPos()
@@ -84,5 +88,14 @@ export class Monster {
         })
 
         return highest
+    }
+
+    setVisible(visible: boolean) {
+        if (visible && !this.insideView) {
+            this.model.addToView()
+        } else if (!visible && this.insideView) {
+            this.model.removeFromView()
+        }
+        this.insideView = visible
     }
 }

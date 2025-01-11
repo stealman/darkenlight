@@ -21,7 +21,7 @@ export const CbWeaponsManager = {
     },
 
     getMaterial(texture: string, matsX: number, matsY: number, hasAlpha: boolean = false) {
-        return Materials.getCustomMaterialFrom(this.scene!, BASE_EQUIP_MATERIAL_PATH + this.BASE_WEAPONS_PATH, texture + ".png", 1 / (matsX * 2), 1 / (matsY * 2), hasAlpha)
+        return Materials.getCustomMaterialFrom(this.scene!, texture, BASE_EQUIP_MATERIAL_PATH + this.BASE_WEAPONS_PATH, texture + ".png", 1 / (matsX * 2), 1 / (matsY * 2), hasAlpha)
     }
 }
 

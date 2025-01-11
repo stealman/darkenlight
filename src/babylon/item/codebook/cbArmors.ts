@@ -10,6 +10,7 @@ export const CbArmorsManager = {
 
     async initHelmets(map: Map<number, EquipItemType>, scene: Scene) {
         this.scene = scene
+        map.set(CbHelmets.PLATE_ARMOR_SKELETON.id, await this.getItem(CbHelmets.PLATE_ARMOR_SKELETON))
         map.set(CbHelmets.HELM_SKELETON.id, await this.getItem(CbHelmets.HELM_SKELETON))
     },
 
@@ -21,10 +22,11 @@ export const CbArmorsManager = {
     },
 
     getMaterial(texture: string, matsX: number, matsY: number, hasAlpha: boolean = false) {
-        return Materials.getCustomMaterialFrom(this.scene!, BASE_EQUIP_MATERIAL_PATH + this.BASE_ARMORS_PATH, texture + ".png", 1 / (matsX * 2), 1 / (matsY * 2), hasAlpha)
+        return Materials.getCustomMaterialFrom(this.scene!, texture, BASE_EQUIP_MATERIAL_PATH + this.BASE_ARMORS_PATH, texture + ".png", 1 / (matsX * 2), 1 / (matsY * 2), hasAlpha)
     }
 }
 
 export const CbHelmets = {
-    HELM_SKELETON: new CbEquipItemData(1751, "1751_helm_skeleton", "helm1", "plate", new Vector3(0, 0.45, 0), new Vector3(0, Math.PI / 2, 0), BabylonUtils.getSymVector(0.42), 4, 2),
+    PLATE_ARMOR_SKELETON: new CbEquipItemData(1100, "1100_armor_skeleton", "armor-plate", "plate", new Vector3(0, 0.45, 0), new Vector3(0, Math.PI / 2, 0), new Vector3(0.36, 0.20, 0.3), 4, 4),
+    HELM_SKELETON: new CbEquipItemData(1850, "1850_helm_skeleton", "helmet", "plate", new Vector3(0, 0.45, 0), new Vector3(0, Math.PI / 2, 0), BabylonUtils.getSymVector(0.40), 4, 4),
 }
