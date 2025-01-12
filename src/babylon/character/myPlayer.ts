@@ -6,6 +6,8 @@ import { WorldData } from '@/babylon/world/worldData'
 import { CharacterModel } from '@/babylon/character/characterModel'
 import { Utils } from '@/utils/utils'
 import { Data } from '@/data/globalData'
+import { MyCharMoveMsg } from '@/network/messages'
+import { Connector } from '@/network/connector'
 
 export const MyPlayer = {
     scene: null as Scene | null,
@@ -41,17 +43,18 @@ export const MyPlayer = {
 
             if (dx < 0.1 && dz < 0.1) {
                 Data.myChar.targetBlock = null
-                Data.myChar.moveAngle = null
+                this.setMoveAngleAndSpeed(null, 0)
             }
         }
 
-        if (Data.myChar.moveAngle != null) {
-            const speed = this.movementType === 'RUN' ? Data.myChar.runSpeed : Data.myChar.walkSpeed
-            let tgtPos = new Vector3(Data.myChar.xPos + Math.cos(Data.myChar.moveAngle + Math.PI / 4) * speed * timeRate, 0, Data.myChar.zPos -Math.sin(Data.myChar.moveAngle + Math.PI / 4) * speed * timeRate)
+        if (Data.myChar.getMoveAngle() != null) {
+            const speed = Data.myChar.getActualSpeed()
+            const angle = Utils.roundToTwoDecimals(Data.myChar.getMoveAngle() + Math.PI / 4)
+            let tgtPos = new Vector3(Data.myChar.xPos + Math.cos(angle) * speed * timeRate, 0, Data.myChar.zPos -Math.sin(angle) * speed * timeRate)
 
             // Check if player can move to the target position, if not try to find an alternate position
             if (!Utils.canCharacterMoveToPosition(this.boxSize, new Vector3(Data.myChar.xPos, 0, Data.myChar.zPos), tgtPos)) {
-                const alternateMovementPos = Utils.getAlternateMovementPos(this.boxSize, Data.myChar.moveAngle, Data.myChar.xPos, Data.myChar.zPos, tgtPos.x, tgtPos.z, speed, timeRate)
+                const alternateMovementPos = Utils.getAlternateMovementPos(this.boxSize, angle, Data.myChar.xPos, Data.myChar.zPos, tgtPos.x, tgtPos.z, speed, timeRate)
                 if (alternateMovementPos != null) {
                     tgtPos = alternateMovementPos
                 } else {
@@ -88,14 +91,17 @@ export const MyPlayer = {
     },
 
     setMoveTypeAngle(movementType: string, angle: number | null) {
-        Data.myChar.moveAngle = angle
         this.movementType = movementType
+        this.setMoveAngleAndSpeed(angle, this.movementType === 'RUN' ? Data.myChar.runSpeed : Data.myChar.walkSpeed)
+
     },
 
-    setTargetPoint(point: Vector3 | null) {
+    setTargetPoint(point: Vector3 | null, resetAngleSpeedIfNull: boolean = true) {
         if (point == null) {
             Data.myChar.targetBlock = null
-            Data.myChar.moveAngle = null
+            if (resetAngleSpeedIfNull) {
+                this.setMoveAngleAndSpeed(null, 0)
+            }
         } else {
             point.x += Data.myChar.xPos
             point.z += Data.myChar.zPos
@@ -105,8 +111,15 @@ export const MyPlayer = {
             this.movementType = distance > 4 ? 'RUN' : 'WALK'
 
             const angle = Math.atan2(-(point.z - Data.myChar.zPos), point.x - Data.myChar.xPos)
-            Data.myChar.moveAngle = angle - Math.PI / 4
+            this.setMoveAngleAndSpeed(angle - Math.PI / 4, this.movementType === 'RUN' ? Data.myChar.runSpeed : Data.myChar.walkSpeed)
             Data.myChar.targetBlock = point
         }
+    },
+
+    setMoveAngleAndSpeed(angle: number | null, speed: number) {
+        Data.myChar.setMoveAngle(angle ? Utils.roundToTwoDecimals(angle) : null)
+        Data.myChar.setActualSpeed(Utils.roundToOneDecimal(speed))
+
+        Connector.sendMessage(new MyCharMoveMsg())
     }
 }

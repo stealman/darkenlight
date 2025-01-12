@@ -1,15 +1,18 @@
 import { Vector3 } from '@babylonjs/core'
 
 export class PlayerData {
+    id: number = 1
     hp: number
     walkSpeed: number = 2.2
     runSpeed: number = 3.5
+    private actualSpeed: number = 0
+
     xPos: number
     zPos: number
     yPos: number
     modelYpos: number | null = null
     modelRotation: number = 0
-    moveAngle: number | null = null
+    private moveAngle: number | null = null
     targetBlock: Vector3 | null = null
 
     rotationSpeed: number = 15
@@ -38,4 +41,19 @@ export class PlayerData {
         }
     }
 
+    setMoveAngle(angle: number | null) {
+        this.moveAngle = angle
+    }
+
+    getMoveAngle() {
+        return this.moveAngle
+    }
+
+    getActualSpeed() {
+        return this.actualSpeed
+    }
+
+    setActualSpeed(speed: number) {
+        this.actualSpeed = speed
+    }
 }

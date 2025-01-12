@@ -71,7 +71,7 @@ export const Controller = {
         const distance = Math.sqrt(dx * dx + dy * dy)
 
         const angleRadians = Math.atan2(dy, dx)
-        MyPlayer.setTargetPoint(null)
+        MyPlayer.setTargetPoint(null, false)
         MyPlayer.setMoveTypeAngle(distance > 150 ? 'RUN' : 'WALK', angleRadians)
     }
 }

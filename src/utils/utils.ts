@@ -29,12 +29,12 @@ export const Utils = {
     },
 
     getAlternateMovementPos(charBoxSize, moveAngle, charX, charZ, tgtPosX, tgtPosZ, speed, timeRate): Vector3 | null {
-        const plusTgtPosX = charX + Math.cos(moveAngle + Math.PI / 4 + Math.PI / 1.5) * speed * timeRate
-        const plusTgtPosZ = charZ - Math.sin(moveAngle + Math.PI / 4 + Math.PI / 1.5) * speed * timeRate
+        const plusTgtPosX = charX + Math.cos(moveAngle + Math.PI / 1.5) * speed * timeRate
+        const plusTgtPosZ = charZ - Math.sin(moveAngle + Math.PI / 1.5) * speed * timeRate
         const plusTgtPointDistance = Vector3.Distance(new Vector3(plusTgtPosX, 0, plusTgtPosZ), new Vector3(tgtPosX, 0, tgtPosZ))
 
-        const minusTgtPosX = charX + Math.cos(moveAngle + Math.PI / 4 - Math.PI / 1.5) * speed * timeRate
-        const minusTgtPosZ = charZ - Math.sin(moveAngle + Math.PI / 4 - Math.PI / 1.5) * speed * timeRate
+        const minusTgtPosX = charX + Math.cos(moveAngle - Math.PI / 1.5) * speed * timeRate
+        const minusTgtPosZ = charZ - Math.sin(moveAngle - Math.PI / 1.5) * speed * timeRate
         const minusTgtPointDistance = Vector3.Distance(new Vector3(minusTgtPosX, 0, minusTgtPosZ), new Vector3(tgtPosX, 0, tgtPosZ))
 
         const plusMovePossible = Utils.canCharacterMoveToPosition(charBoxSize, new Vector3(charX, 0, charZ), new Vector3(plusTgtPosX, 0, plusTgtPosZ))
@@ -60,5 +60,13 @@ export const Utils = {
     getRandomFromTo(min, max) {
         if (min === max) return min
         return this.rollDice((1 + max) - min, true) + min
+    },
+
+    roundToOneDecimal(value: number): number {
+        return Math.round(value * 10) / 10
+    },
+
+    roundToTwoDecimals(value: number): number {
+        return Math.round(value * 100) / 100
     }
 }

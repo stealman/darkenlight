@@ -1,4 +1,4 @@
-import { LoginMsg } from '@/network/messages'
+import { LoginMsg, Message } from '@/network/messages'
 import { ResponseProcessor } from '@/network/responseProcessor'
 
 export const Connector = {
@@ -28,6 +28,10 @@ export const Connector = {
     sendLoginRequest(username: string, password: string) {
         const loginMsg = new LoginMsg(username, password)
         this.socket.send(JSON.stringify(loginMsg))
+    },
+
+    sendMessage(msg: Message) {
+        this.socket.send(JSON.stringify(msg))
     }
 }
 
