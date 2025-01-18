@@ -16,7 +16,7 @@ export const MonsterManager = {
     },
 
     addMonster (id: number, type: number, position: { x: number, z: number }, hp: number) {
-        type = Utils.getRandomFromTo(12, 12)
+        type = Utils.getRandomFromTo(1, 3)
 
         if (this.monsters.has(id)) {
             const mob = this.monsters.get(id)

@@ -120,6 +120,6 @@ export const MyPlayer = {
         Data.myChar.setMoveAngle(angle ? Utils.roundToTwoDecimals(angle) : null)
         Data.myChar.setActualSpeed(Utils.roundToOneDecimal(speed))
 
-        Connector.sendMessage(new MyCharMoveMsg())
+        Connector.sendMoveMessage(new MyCharMoveMsg())
     }
 }

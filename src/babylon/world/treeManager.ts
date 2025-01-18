@@ -20,12 +20,14 @@ export const TreeManager = {
     },
 
     addTrees() {
-        for (let i = 0; i < 150; i++) {
-            const x = 300 + Math.random() * 100
-            const z = 500 + Math.random() * 100
-            const y = WorldData.getBlockMap()[Math.ceil(x)][Math.ceil(z)].height + 0.5
-            this.allTrees.push(new Tree1(new Vector3(x, y, z), Math.floor(Math.random() * 4) * Math.PI / 2, 0.6 + Math.random() * 0.4, MaterialEnum1.getMaterialByIndex(1 + Math.floor(Math.random() * 2))))
-        }
+    },
+
+    consumeTrees(data) {
+        data.forEach(tree => {
+            const y = WorldData.getBlockMap()[tree.x][tree.z].height + 0.5
+            this.allTrees.push(new Tree1(new Vector3(tree.x, y, tree.z), Math.floor(Math.random() * 4) * Math.PI / 2, tree.size, MaterialEnum1.getMaterialByIndex(1 + Math.floor(Math.random() * 2))))
+        })
+
     },
 
     renderTrees() {

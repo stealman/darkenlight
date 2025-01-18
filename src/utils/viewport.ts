@@ -33,6 +33,9 @@ export const ViewportManager = {
     },
 
     isPointInVisibleMatrix(x, z, tolerance = 0) {
+        if (!this.viewPortInitialized) {
+            return false
+        }
         if (x < this.minX || x > this.maxX || z < this.minZ || z > this.maxZ) {
             return false
         }

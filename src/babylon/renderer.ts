@@ -22,6 +22,7 @@ import { WearableManager } from '@/babylon/item/wearableManager'
 import { MonsterManager } from '@/babylon/monsters/monsterManager'
 import { Data } from '@/data/globalData'
 import { MonsterLoader } from '@/babylon/monsters/monsterLoader'
+import { Connector } from '@/network/connector'
 
 /**
  * Main Renderer
@@ -191,10 +192,12 @@ export const Renderer = {
             }
         }
         WorldRenderer.updateWorldParentNode()
+        Connector.processMessages(actualTime)
         scene.render()
 
         if (!ViewportManager.viewPortInitialized) {
             ViewportManager.calculateViewport(this.camera)
+            console.log("Viewport initialized")
         }
 
         this.lastFrameTime = actualTime
